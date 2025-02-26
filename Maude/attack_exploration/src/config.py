@@ -1,6 +1,6 @@
-from conversion_utils import name_to_maude
-from zone import Zone, lookup
-from actors import Nameserver, DelayedNameserver, Client
+from .conversion_utils import name_to_maude
+from .zone import Zone, lookup
+from .actors import Nameserver, DelayedNameserver, Client
 
 PATH_TO_PROJECT_DIR = '../../'
 

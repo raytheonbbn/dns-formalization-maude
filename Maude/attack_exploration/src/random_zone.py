@@ -2,9 +2,9 @@ import random
 import string
 import networkx as nx
 
-from zone import Record, Zone
-from conversion_utils import addr_op_name_from_domain
-from utils import get_domain_prefixes
+from .zone import Record, Zone
+from .conversion_utils import addr_op_name_from_domain
+from .utils import get_domain_prefixes
 
 TTL = 3600 # TTL for generated records
 SOA_MINIMUM = 3600 # SOA MINIMUM field (TTL for negative caching)

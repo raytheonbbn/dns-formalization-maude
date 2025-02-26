@@ -4,11 +4,11 @@ import re
 import random
 import sys
 
-from zone import Record, Zone
-from config import Config
-from actors import Resolver, Nameserver
-from random_zone import get_random_zones
-from conversion_utils import config_to_maude_file
+from .zone import Record, Zone
+from .config import Config
+from .actors import Resolver, Nameserver
+from .random_zone import get_random_zones
+from .conversion_utils import config_to_maude_file
 
 CLIENT_ADDR = 'cAddr'
 MAUDE_FILENAME = 'config.maude'

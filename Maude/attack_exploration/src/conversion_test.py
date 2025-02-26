@@ -1,10 +1,10 @@
 import subprocess
 
-from zone import Zone, Record
-from actors import Resolver, Client, Nameserver
-from config import Config
-from query import Query
-from conversion_utils import config_to_maude_file
+from .zone import Zone, Record
+from .actors import Resolver, Client, Nameserver
+from .config import Config
+from .query import Query
+from .conversion_utils import config_to_maude_file
 
 def go():
 

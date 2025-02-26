@@ -1,5 +1,5 @@
 
-from conversion_utils import name_to_maude, rtype_to_maude
+from .conversion_utils import name_to_maude, rtype_to_maude
 
 class Query:
 

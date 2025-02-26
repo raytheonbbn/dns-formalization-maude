@@ -1,7 +1,7 @@
 import networkx as nx
 
-from zone import Record
-from query import Query
+from .zone import Record
+from .query import Query
 
 SYMBOLIC_LABEL_PREFIX = '_alpha'
 MAX_DOMAIN_BYTE_LENGTH = 100 # in reality, this is 255; a lower value produces fewer ECs in case of a DNAME loop

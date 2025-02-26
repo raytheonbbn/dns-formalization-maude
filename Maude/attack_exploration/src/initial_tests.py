@@ -2,7 +2,7 @@ import random
 import string
 import networkx as nx
 
-from zone import Record
+from .zone import Record
 
 # parameters for random zone generation
 DEGREE = 4

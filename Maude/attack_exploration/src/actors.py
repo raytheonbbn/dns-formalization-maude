@@ -1,4 +1,4 @@
-from conversion_utils import address_to_maude, querylist_to_maude
+from .conversion_utils import address_to_maude, querylist_to_maude
 
 class Client:
 

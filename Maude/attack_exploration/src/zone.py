@@ -1,4 +1,4 @@
-from conversion_utils import address_to_maude, name_to_maude, rtype_to_maude, soa_data
+from .conversion_utils import address_to_maude, name_to_maude, rtype_to_maude, soa_data
 
 class Zone:
 
