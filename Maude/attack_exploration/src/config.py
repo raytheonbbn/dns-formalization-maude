@@ -86,17 +86,17 @@ class Config:
         names = map(lambda rec: rec.owner, self.get_records())
         return list(set(names))
 
-    def to_maude_prob(self, param_dict) -> str:
+    def to_maude_prob(self, param_dict, path=PATH_TO_PROJECT_DIR) -> str:
         """
         Converts the configuration to a Maude representation for the probabilistic model.
         """
 
         res = '\n'.join((
-                f'load {PATH_TO_PROJECT_DIR}src/probabilistic-model/dns',
-                f'load {PATH_TO_PROJECT_DIR}src/probabilistic-model/sampler',
-                f'load {PATH_TO_PROJECT_DIR}test/probabilistic-model/test_helpers',
-                f'load {PATH_TO_PROJECT_DIR}src/probabilistic-model/properties',
-                f'load {PATH_TO_PROJECT_DIR}attacker-models/probabilistic-model/attacker'
+                f'load {path}src/probabilistic-model/dns',
+                f'load {path}src/probabilistic-model/sampler',
+                f'load {path}test/probabilistic-model/test_helpers',
+                f'load {path}src/probabilistic-model/properties',
+                f'load {path}attacker-models/probabilistic-model/attacker'
 
                 '\n--- This maude file has been created automatically from the Python representation.\n',
 
@@ -122,14 +122,14 @@ class Config:
         
         return res
 
-    def to_maude_nondet(self, param_dict) -> str:
+    def to_maude_nondet(self, param_dict, path=PATH_TO_PROJECT_DIR) -> str:
         """
         Converts the configuration to a Maude representation for the non-deterministic model.
         """
 
         res = '\n'.join((
-                f'load {PATH_TO_PROJECT_DIR}src/nondet-model/dns',
-                f'load {PATH_TO_PROJECT_DIR}test/nondet-model/test_helpers',
+                f'load {path}src/nondet-model/dns',
+                f'load {path}test/nondet-model/test_helpers',
 
                 '\n--- This maude file has been created automatically from the Python representation.\n',
 
@@ -152,17 +152,17 @@ class Config:
         
         return res
 
-    def to_maude_nondet_no_client(self, param_dict) -> str:
+    def to_maude_nondet_no_client(self, param_dict, path=PATH_TO_PROJECT_DIR) -> str:
         """
         Converts the configuration to a Maude representation for the non-deterministic model,
         with a non-deterministic query that is generated in Maude using rewrite rules.
         """
 
         res = '\n'.join((
-                f'load {PATH_TO_PROJECT_DIR}src/nondet-model/dns',
-                f'load {PATH_TO_PROJECT_DIR}test/nondet-model/test_helpers',
-                f'load {PATH_TO_PROJECT_DIR}src/common/label_graph',
-                f'load {PATH_TO_PROJECT_DIR}model-checking/preds',
+                f'load {path}src/nondet-model/dns',
+                f'load {path}test/nondet-model/test_helpers',
+                f'load {path}src/common/label_graph',
+                f'load {path}model-checking/preds',
 
                 '\n--- This maude file has been created automatically from the Python representation.\n',
 
