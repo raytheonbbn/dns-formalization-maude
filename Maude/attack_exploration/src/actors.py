@@ -38,9 +38,10 @@ class Resolver:
 
 class Nameserver:
 
-    def __init__(self, address, zones) -> None:
+    def __init__(self, address, zones, forwardonly='nullAddr') -> None:
         self.address = address
         self.zones = zones
+        self.forwardonly = forwardonly
 
     def __str__(self) -> str:
         return f'< {self.address} : Nameserver | db: ({self.zones}), ... >'
@@ -48,7 +49,9 @@ class Nameserver:
     def to_maude(self) -> str:
         res = f'< {address_to_maude(self.address)} : Nameserver |\n'
         res += f'    db: ({" ".join(list(map(lambda z: z.maude_name(), self.zones)))}),\n'
-        res += f'    queue: nilQueue >'
+        res += f'    queue: nilQueue,\n'
+        res += f'    forwardonly: {address_to_maude(self.forwardonly)},\n'
+        res += f'    queriesFwd: nilTAQL >'
         return res
 
 class DelayedNameserver:

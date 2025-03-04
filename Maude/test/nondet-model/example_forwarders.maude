@@ -106,12 +106,12 @@ mod TEST is
                          sentQueries: eptQSS >
 
     --- Root name server
-    < addrRoot : Nameserver | db: dbRoot, queue: nilQueue, forwardonly: nullAddr >
+    < addrRoot : Nameserver | db: dbRoot, queue: nilQueue, forwardonly: nullAddr, queriesFwd: nilTAQL >
     --- TLD name servers
-    < addrNScom : Nameserver | db: dbNScom, queue: nilQueue, forwardonly: nullAddr >
-    < addrNSnet : Nameserver | db: dbNSnet, queue: nilQueue, forwardonly: nullAddr >
+    < addrNScom : Nameserver | db: dbNScom, queue: nilQueue, forwardonly: nullAddr, queriesFwd: nilTAQL >
+    < addrNSnet : Nameserver | db: dbNSnet, queue: nilQueue, forwardonly: nullAddr, queriesFwd: nilTAQL >
     --- SLD name servers
-    < addrNS1 : Nameserver | db: dbNSauth, queue: nilQueue, forwardonly: nullAddr >
+    < addrNS1 : Nameserver | db: dbNSauth, queue: nilQueue, forwardonly: nullAddr, queriesFwd: nilTAQL >
     < addrNScorporate : Nameserver | db: zoneCorporateCom, queue: nilQueue, forwardonly: rAddr, queriesFwd: nilTAQL >
     .
 
