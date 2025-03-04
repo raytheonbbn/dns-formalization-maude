@@ -192,7 +192,9 @@ mod DNS is
      tupleQSSQSSIdNatMap(QSS_SEND, QSS_ABORT, IN'') := splitQSSWorkBudget(QSS_KNOWN_ADDR, IN') /\
      --- Failed queries: Client queries without known addresses for which a follow-up query has been aborted due to
      --- exceeded work budget
-     QSS_FAILED := filterQSSClientQueriesToAbort((QSS_UNKNOWN_ADDR ;; QSS_ABORT), QSS_ABORT) .
+     QSS_FAILED := filterQSSClientQueriesToAbort((QSS_UNKNOWN_ADDR ;; QSS_ABORT), QSS_ABORT) 
+     [print "resolver-recv-query NAME " NAME " NA " NA " QNNAME " QNAME " QT " QTYPE " SNAME_FULL " SNAME_FULL]
+     .
 
   ---------------------
   --- [NAME SERVER] ---
@@ -206,7 +208,7 @@ mod DNS is
   ---  * The query is answered immediately, with zero processing delay.
   crl [nameserver-recv-query-unbounded] :
   < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', nsQueryLog: TAQL, nsRespLog: TARL, STATE' >
-  < NS : Nameserver | db: DB, STATE >
+  < NS : Nameserver | db: DB, forwardonly: ADDR, STATE >
   (to NS from RSV : query(ID, QNAME, QTYPE))
 =>
   < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, NS, IAF) else IAF fi),
@@ -216,9 +218,44 @@ mod DNS is
                     nsQueryLog: (if monitorQueryLog? then tupleAddrQuery(NS, query(ID, QNAME, QTYPE)) TAQL else TAQL fi),
                     nsRespLog: (if monitorQueryLog? then tupleAddrResp(NS, RESP) TARL else TARL fi),
                     STATE' >
-  < NS : Nameserver | db: DB, STATE >
+  < NS : Nameserver | db: DB, forwardonly: ADDR, STATE >
   (to RSV from NS : RESP)
-  if RESP := matchDown(ID, QNAME, QTYPE, DB) .
+  if (ADDR == nullAddr or isAuthoritativeForName(QNAME, DB))
+  /\ RESP := matchDown(ID, QNAME, QTYPE, DB) .
+
+  --- > Receive query from client, not authoritative for the name, and have forwaders block
+  ----  Forward to the forwards and track the query response
+  crl [nameserver-recv-query-forward] :
+  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
+  < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: TAQL, STATE >
+  (to NS from CL : query(ID, QNAME, QTYPE))
+=>
+  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, NS, IAF) else IAF fi),
+                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, NS, IAF') else IAF' fi),
+                    totalRcv: incrAF(NS, AF),
+                    totalSent: incrAF(NS, AF'),                    
+                    STATE' >
+  < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: (tupleAddrQuery(CL, query(ID, QNAME, QTYPE)) TAQL), STATE >
+  (to ADDR from NS : query(ID, QNAME, QTYPE))
+  if ADDR =/= nullAddr --- have forwarding
+    /\ not isAuthoritativeForName(QNAME, DB)
+    .
+
+  --- > Receive response for a client query that was forwarded before
+  ----  Forward to the response to the client address for the query and remove it from the list 
+  rl [nameserver-recv-query-forward-response] :
+  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
+  < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: (tupleAddrQuery(CL, query(ID, QNAME, QTYPE)) TAQL), STATE >
+  (to NS from ADDR : response(ID, SNAME, ANS, AUTH, ADD, RCODE))
+=>
+  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, NS, IAF) else IAF fi),
+                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, NS, IAF') else IAF' fi),
+                    totalRcv: incrAF(NS, AF),
+                    totalSent: incrAF(NS, AF'),                    
+                    STATE' >
+  < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: TAQL, STATE >
+  (to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE))  
+    .
 
   ------------------
   --- [RESOLVER] ---

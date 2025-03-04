@@ -71,6 +71,15 @@ fmod SORTS is
   op __ : NodataCache NodataCache -> NodataCache [ctor assoc id: nilNodataCache] .
 
   sort Query .
+
+  --- Tuple{Address, Query} and list thereof
+  sorts TupleAddrQuery TupleAddrQueryList .
+  subsort TupleAddrQuery < TupleAddrQueryList .
+
+  op tupleAddrQuery : Address Query -> TupleAddrQuery .
+  op nilTAQL : -> TupleAddrQueryList [ctor] .
+  op __ : TupleAddrQueryList TupleAddrQueryList -> TupleAddrQueryList [ctor assoc id: nilTAQL] .
+
 endfm
 --- The following views are necessary to create lists (LIST{X} is a functional module on X :: TRIV)
 view Name from TRIV to SORTS is sort Elt to Name . endv
@@ -229,6 +238,15 @@ fmod NODE is
   --- e.g., NS records or glue records.
   op db:_ : List{Record} -> Attribute [format (nss d d)] .
 
+  --- A DNS server with a forwarders block will forward queries that it is authoritative for
+  --- The server answers queries for its zone and forwards everything else
+  --- BIND9 supports a forwarders blocks 
+  ---  https://bind9.readthedocs.io/en/latest/reference.html#forwarding
+  op forwardonly:_ : Address -> Attribute .
+  
+  --- With forwarding, we track queries forwarded to know where to send responses
+  op queriesFwd:_ : TupleAddrQueryList -> Attribute [format (nss d d)] . 
+
   --- Query queue
   sorts QueueEntry Queue .
   subsort QueueEntry < Queue .
@@ -238,7 +256,7 @@ fmod NODE is
   op __ : Queue Queue -> Queue [ctor assoc id: nilQueue] .
 
   op queue:_ : Queue -> Attribute [format (nss d d)] .
-  
+    
   ----------------
   --- [CLIENT] ---
   ----------------
@@ -249,7 +267,7 @@ fmod NODE is
 endfm
 
 fmod MONITOR is
-  inc ACTOR-MODEL + MSG .
+  inc ACTOR-MODEL + MSG + SORTS .
 
   --- Map{Address, Float}
   sorts AddrFloatEntry AddrFloatMap .
@@ -282,14 +300,6 @@ fmod MONITOR is
   op idAddrListEntry : Id AddrList -> IdAddrListEntry [ctor] .
   op emptyIAL : -> IdAddrListMap [ctor] .
   op _,_ : IdAddrListMap IdAddrListMap -> IdAddrListMap [ctor assoc comm id: emptyIAL prec 121] .
-
-  --- Tuple{Address, Query} and list thereof
-  sorts TupleAddrQuery TupleAddrQueryList .
-  subsort TupleAddrQuery < TupleAddrQueryList .
-
-  op tupleAddrQuery : Address Query -> TupleAddrQuery .
-  op nilTAQL : -> TupleAddrQueryList [ctor] .
-  op __ : TupleAddrQueryList TupleAddrQueryList -> TupleAddrQueryList [ctor assoc id: nilTAQL] .
 
   --- Tuple{Address, Response} and list thereof
   sorts TupleAddrResp TupleAddrRespList .

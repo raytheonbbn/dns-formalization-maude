@@ -1257,6 +1257,15 @@ mod AUX-COMMON is
   --- [NAME SERVER HELPERS] ---
   -----------------------------
 
+  --- Is Nameserver authoritative for this name?
+  op isAuthoritativeForName : Name List{Record} -> Bool .
+  ceq isAuthoritativeForName(NAME, RS)
+    = true
+    if < NAME', soa, TTL, RDATA > := nearestAncestorSOA(NAME, RS) .
+    
+  eq isAuthoritativeForName(NAME, RS)
+    = false [owise] .
+
   --- "Search the available zones for the zone which is the nearest ancestor to QNAME."
   ---   (Alg. 4.3.2, step 2)
   ---   Returns the SOA record of the nearest ancestor zone.
