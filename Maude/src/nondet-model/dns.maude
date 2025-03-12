@@ -5,13 +5,10 @@ mod DNS is
 
   --- Variables
   var C : Config .
-  vars CL RSV NS ADDR ADDR' MON : Address .
+  vars CL RSV NS ADDR ADDR' : Address .
   vars ID ID' : Id .
   var IDL : IdList .
   var TAQL : TupleAddrQueryList .
-  var TARL : TupleAddrRespList .
-  var TNRL : TupleNameRecsList .
-  var TSAL : TupleSlistArgsList .
   vars NAME NAME' NAME'' NAME''' QNAME SNAME SNAME' QMIN_SNAME SNAME_FULL SNAME_FULL' : Name .
   var Q : Query .
   var QTYPE : RType .
@@ -29,8 +26,6 @@ mod DNS is
   vars ANS ANS' ANS'' ANS''' AUTH ADD CACHE_HIT ANS_CHAIN : List{Record} .
   vars SBELT SLIST SLIST' : ZoneState .
   vars NA NA' NA'' : Map{Name, Address} .
-  vars IAF IAF' : IdAddrFloatMap .
-  vars AF AF' : AddrFloatMap .
   var IALMAP : IdAddrListMap .
   vars IN IN' IN'' : IdNatMap .
   vars STATE STATE' : AttributeSet .
@@ -46,15 +41,9 @@ mod DNS is
   --- > Send next query from local list to the resolver after receiving an artificial "start" signal message.
   --- Assumption: One single resolver for each client.
   rl [client-start] :
-  < MON : Monitor | msgsSent: IAF', totalSent: AF', clientQSent: N, clQueryLog: TAQL, STATE' >
   < CL : Client | queries: (query(ID, QNAME, QTYPE) QS), resolver: RSV, STATE >
   (to CL : start)
 =>
-  < MON : Monitor | msgsSent: (if monitorDetailedMsgStats? then incr(ID, CL, IAF') else IAF' fi),
-                    totalSent: incrAF(CL, AF'),
-                    clientQSent: s N,
-                    clQueryLog: (if monitorQueryLog? then tupleAddrQuery(CL, query(ID, QNAME, QTYPE)) TAQL else TAQL fi),
-                    STATE' >
   < CL : Client | queries: QS, resolver: RSV, STATE >
   (to RSV from CL : query(ID, QNAME, QTYPE)) .
 
@@ -65,24 +54,12 @@ mod DNS is
   --- (No name servers are contacted in this case.)
   --- [Alg. 5.3.3, step 1]
   crl [resolver-reply-local] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
                      STATE >
   (to RSV from CL : query(ID, QNAME, QTYPE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: incrAF(RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL, ANS_CHAIN) TNRL else TNRL fi),
-                    STATE' >
   < RSV : Resolver | cache: filterCacheTTLGreaterThan(CACHE_UNEXPIRED, 0.0),
                      nxdomainCache: filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE_UNEXPIRED, 0.0),
                      nodataCache: filterNodataCacheTTLGreaterThan(NODATA_CACHE_UNEXPIRED, 0.0),
@@ -119,13 +96,6 @@ mod DNS is
   --- addresses are resolved even when there are (some) name servers with known addresses.
   --- [Alg. 5.3.3, steps 2-3]
   crl [resolver-recv-query] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    rsvSlistLog: TSAL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -136,14 +106,6 @@ mod DNS is
                      STATE >
   (to RSV from CL : query(ID, QNAME, QTYPE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS((QSS_SEND ;; QSS_FAILED), RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL, ANS_CHAIN) TNRL else TNRL fi),
-                    rsvSlistLog: (if monitorSlistArgsLog? then tupleSlistArgs(SNAME_FULL, CACHE_UNEXPIRED,
-                                     NXDOMAIN_CACHE_UNEXPIRED, NODATA_CACHE_UNEXPIRED, SBELT, QNAME) TSAL else TSAL fi),
-                    STATE' >
   < RSV : Resolver | cache: filterCacheTTLGreaterThan(CACHE_UNEXPIRED, 0.0),
                      nxdomainCache: filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE_UNEXPIRED, 0.0),
                      nodataCache: filterNodataCacheTTLGreaterThan(NODATA_CACHE_UNEXPIRED, 0.0),
@@ -207,17 +169,9 @@ mod DNS is
   ---  * This rule is only applicable when name server resource bounds are disabled (nsResourceBounds? parameter)
   ---  * The query is answered immediately, with zero processing delay.
   crl [nameserver-recv-query-unbounded] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', nsQueryLog: TAQL, nsRespLog: TARL, STATE' >
   < NS : Nameserver | db: DB, forwardonly: ADDR, STATE >
   (to NS from RSV : query(ID, QNAME, QTYPE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, NS, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, NS, IAF') else IAF' fi),
-                    totalRcv: incrAF(NS, AF),
-                    totalSent: incrAF(NS, AF'),
-                    nsQueryLog: (if monitorQueryLog? then tupleAddrQuery(NS, query(ID, QNAME, QTYPE)) TAQL else TAQL fi),
-                    nsRespLog: (if monitorQueryLog? then tupleAddrResp(NS, RESP) TARL else TARL fi),
-                    STATE' >
   < NS : Nameserver | db: DB, forwardonly: ADDR, STATE >
   (to RSV from NS : RESP)
   if (ADDR == nullAddr or isAuthoritativeForName(QNAME, DB))
@@ -226,15 +180,9 @@ mod DNS is
   --- > Receive query from client, not authoritative for the name, and have forwaders block
   ----  Forward to the forwards and track the query response
   crl [nameserver-recv-query-forward] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
   < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: TAQL, STATE >
   (to NS from CL : query(ID, QNAME, QTYPE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, NS, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, NS, IAF') else IAF' fi),
-                    totalRcv: incrAF(NS, AF),
-                    totalSent: incrAF(NS, AF'),                    
-                    STATE' >
   < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: (tupleAddrQuery(CL, query(ID, QNAME, QTYPE)) TAQL), STATE >
   (to ADDR from NS : query(ID, QNAME, QTYPE))
   if ADDR =/= nullAddr --- have forwarding
@@ -244,15 +192,9 @@ mod DNS is
   --- > Receive response for a client query that was forwarded before
   ----  Forward to the response to the client address for the query and remove it from the list 
   rl [nameserver-recv-query-forward-response] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
   < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: (tupleAddrQuery(CL, query(ID, QNAME, QTYPE)) TAQL), STATE >
   (to NS from ADDR : response(ID, SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, NS, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, NS, IAF') else IAF' fi),
-                    totalRcv: incrAF(NS, AF),
-                    totalSent: incrAF(NS, AF'),                    
-                    STATE' >
   < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: TAQL, STATE >
   (to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE))  
     .
@@ -275,12 +217,6 @@ mod DNS is
   ---  * Any ongoing subqueries of the (now answered) client query will still be resolved.
   ---  * Data ranking: Note that we consider only data with sufficient credibility score, see RFC 2181, §5.4.1.
   crl [resolver-recv-ans-for-client] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -290,12 +226,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: incrAF(RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME, ANS') TNRL else TNRL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -358,12 +288,6 @@ mod DNS is
   ---    no name server remains.
   ---  * Data ranking: Note that we consider only data with sufficient credibility score, see RFC 2181, §5.4.1.
   crl [resolver-recv-ans-for-resolver] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -373,12 +297,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS(QSS_SEND ;; QSS_FAILED, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME, ANS') TNRL else TNRL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -444,12 +362,6 @@ mod DNS is
   ---  * Any ongoing subqueries of the (now answered) client query will still be resolved.
   ---  * Data ranking: Note that we consider only data with sufficient credibility score, see RFC 2181, §5.4.1.
   crl [resolver-recv-cname-reply-for-client-answered] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -459,12 +371,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: incrAF(RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL', ANS_CHAIN) TNRL else TNRL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -520,12 +426,6 @@ mod DNS is
   ---  * QMIN: This rule applies when QMIN is done or the original QNAME was sent, i.e., the CNAME can be followed.
   ---  * Data ranking: Note that we consider only data with sufficient credibility score, see RFC 2181, §5.4.1.
   crl [resolver-recv-cname-reply-for-resolver-answered] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -535,12 +435,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS(QSS_SEND ;; QSS_FAILED, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL', ANS_CHAIN) TNRL else TNRL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -606,13 +500,6 @@ mod DNS is
   ---  * QMIN: This rule applies when QMIN is done or the original QNAME was sent, i.e., the CNAME can be followed.
   ---  * Data ranking: Note that the credibility requirements may differ for client queries and resolver subqueries.
   crl [resolver-recv-cname-reply-not-answered] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    rsvSlistLog: TSAL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -623,14 +510,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS((QSS_SEND ;; QSS_FAILED), RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL', ANS_CHAIN) TNRL else TNRL fi),
-                    rsvSlistLog: (if monitorSlistArgsLog? then tupleSlistArgs(SNAME_FULL', CACHE'', NXDOMAIN_CACHE',
-                                    NODATA_CACHE', SBELT, QNAME) TSAL else TSAL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -709,12 +588,6 @@ mod DNS is
   ---  * Any ongoing subqueries of the (now answered) client query will still be resolved.
   ---  * Data ranking: Note that we consider only data with sufficient credibility score, see RFC 2181, §5.4.1.
   crl [resolver-recv-dname-reply-for-client-answered] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -724,12 +597,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: incrAF(RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL', ANS_CHAIN) TNRL else TNRL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -802,12 +669,6 @@ mod DNS is
   ---  * QMIN: DNAME responses are treated the same no matter if the query was for a minimized QNAME.
   ---  * Data ranking: Note that we consider only data with sufficient credibility score, see RFC 2181, §5.4.1.
   crl [resolver-recv-dname-reply-for-resolver-answered] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -817,12 +678,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS(QSS_SEND ;; QSS_FAILED, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL', ANS_CHAIN) TNRL else TNRL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -899,13 +754,6 @@ mod DNS is
   ---  * QMIN: DNAME responses are treated the same no matter if the query was for a minimized QNAME.
   ---  * Data ranking: Note that the credibility requirements may differ for client queries and resolver subqueries.
   crl [resolver-recv-dname-reply-not-answered] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvRewriteLog: TNRL,
-                    rsvSlistLog: TSAL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -916,14 +764,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS((QSS_SEND ;; QSS_FAILED), RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    rsvRewriteLog: (if monitorRewriteLog? then tupleNameRecs(SNAME_FULL', ANS_CHAIN) TNRL else TNRL fi),
-                    rsvSlistLog: (if monitorSlistArgsLog? then tupleSlistArgs(SNAME_FULL', CACHE'', NXDOMAIN_CACHE',
-                                    NODATA_CACHE', SBELT, QNAME) TSAL else TSAL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -1009,12 +849,6 @@ mod DNS is
   ---  * Upon receiving a referral, the resolver only re-initializes the SLIST of the query for which it received the
   ---    referral. It does not check whether the newly learned name servers might also be useful for other queries.
   crl [resolver-recv-referral-reply] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    rsvSlistLog: TSAL,
-                    STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -1025,13 +859,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, nil, AUTH, ADD, 0))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS((QSS_SEND ;; QSS_FAILED), RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    rsvSlistLog: (if monitorSlistArgsLog? then tupleSlistArgs(SNAME_FULL, CACHE', NXDOMAIN_CACHE_UNEXPIRED,
-                                    NODATA_CACHE_UNEXPIRED, SBELT, QNAME) TSAL else TSAL fi),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE_UNEXPIRED, 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -1090,7 +917,6 @@ mod DNS is
   ---    However, when the original QNAME was used, the CNAME can be followed independently of the QTYPE.
   ---  * Accepts responses from any name server.
   crl [resolver-recv-qmin-noerror-reply] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
   < RSV : Resolver | cache: CACHE,
                      nxdomainCache: NXDOMAIN_CACHE,
                      nodataCache: NODATA_CACHE,
@@ -1100,11 +926,6 @@ mod DNS is
                      STATE >
   (to RSV from NS : response(ID', SNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS((QSS_SEND ;; QSS_FAILED), RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    STATE' >
   < RSV : Resolver | cache: (if rsvCaching? then filterCacheTTLGreaterThan(CACHE'', 0.0) else CACHE fi),
                      nxdomainCache: (if rsvCaching? then filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE', 0.0)
                                       else NXDOMAIN_CACHE fi),
@@ -1157,18 +978,12 @@ mod DNS is
   ---    section and a delegation for the (last) canonical name in the Authority section, i.e., both cases 4b and 4c
   ---    of the algorithm apply. This case is handled in the rule for CNAME responses.
   crl [resolver-recv-bad-referral-reply-for-client] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
   < RSV : Resolver | workBudget: IN,
                      blockedQueries: QSS,
                      sentQueries: (QSTATE ;; QSS'),
                      STATE >
   (to RSV from NS : response(ID', SNAME, nil, AUTH, ADD, 0))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS(QSS_SEND ;; QSS_FAILED, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    STATE' >
   < RSV : Resolver | workBudget: cleanUpWorkBudget(IN', QSS_UNKNOWN_ADDR ;; QSS ;; QSS_SEND ;; QSS'),
                      blockedQueries: (QSS_UNKNOWN_ADDR ;; QSS),
                      sentQueries: (QSS_SEND ;; QSS'),
@@ -1209,18 +1024,12 @@ mod DNS is
   ---  * The case that no name servers remain should only occur for blockedQueries, as sentQueries necessarily have at
   ---    least one known address in the SLIST.
   crl [resolver-recv-bad-referral-reply-for-resolver] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
   < RSV : Resolver | workBudget: IN,
                      blockedQueries: QSS,
                      sentQueries: (QSTATE ;; QSS'),
                      STATE >
   (to RSV from NS : response(ID', SNAME, nil, AUTH, ADD, 0))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS(QSS_SEND ;; QSS_FAILED, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    STATE' >
   < RSV : Resolver | workBudget: cleanUpWorkBudget(IN',
                       filterQSSNotFollowUpOfOriginalAborted(QSS_UNKNOWN_ADDR, QSS_ABORT) ;; QSS_SEND ;; QSS'''),
                      blockedQueries: filterQSSNotFollowUpOfOriginalAborted(QSS_UNKNOWN_ADDR, QSS_ABORT),
@@ -1265,18 +1074,12 @@ mod DNS is
   --- Send the query to another name server from the SLIST, or send a SERVFAIL response to the client if there are no
   --- other name servers left.
   crl [resolver-recv-refused-reply-for-client] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
   < RSV : Resolver | workBudget: IN,
                      blockedQueries: QSS,
                      sentQueries: (QSTATE ;; QSS'),
                      STATE >
   (to RSV from NS : response(ID', SNAME, nil, nil, nil, 5))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS(QSS_SEND ;; QSS_FAILED, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    STATE' >
   < RSV : Resolver | workBudget: cleanUpWorkBudget(IN', QSS_UNKNOWN_ADDR ;; QSS ;; QSS_SEND ;; QSS'),
                      blockedQueries: (QSS_UNKNOWN_ADDR ;; QSS),
                      sentQueries: (QSS_SEND ;; QSS'),
@@ -1310,18 +1113,12 @@ mod DNS is
   ---  * The case that no name servers remain should only occur for blockedQueries, as sentQueries necessarily have at
   ---    least one known address in the SLIST.
   crl [resolver-recv-refused-reply-for-resolver] :
-  < MON : Monitor | msgsRcv: IAF, msgsSent: IAF', totalRcv: AF, totalSent: AF', STATE' >
   < RSV : Resolver | workBudget: IN,
                      blockedQueries: QSS,
                      sentQueries: (QSTATE ;; QSS'),
                      STATE >
   (to RSV from NS : response(ID', SNAME, nil, nil, nil, 5))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID', RSV, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incrForQSS(QSS_SEND ;; QSS_FAILED, RSV, IAF') else IAF' fi),
-                    totalRcv: incrAF(RSV, AF),
-                    totalSent: addAF(sizeQSSFloat(QSS_SEND ;; QSS_FAILED), RSV, AF'),
-                    STATE' >
   < RSV : Resolver | workBudget: cleanUpWorkBudget(IN',
                       filterQSSNotFollowUpOfOriginalAborted(QSS_UNKNOWN_ADDR, QSS_ABORT) ;; QSS_SEND ;; QSS'''),
                      blockedQueries: filterQSSNotFollowUpOfOriginalAborted(QSS_UNKNOWN_ADDR, QSS_ABORT),
@@ -1361,30 +1158,9 @@ mod DNS is
   --- > Receive response from resolver and send out next query.
   --- Note: The client "accepts" any response coming from its resolver, even if it did not make a request.
   rl [client-recv-resp-send-next] :
-  < MON : Monitor | msgsRcv: IAF,
-                    msgsSent: IAF',
-                    totalRcv: AF,
-                    totalSent: AF',
-                    clientQSent: N,
-                    clientQAnswered: N',
-                    clientQServfail: N'',
-                    clQueryLog: TAQL,
-                    clRespLog: TARL,
-                    STATE' >
   < CL : Client | queries: (query(ID', QNAME, QTYPE) QS), resolver: RSV, STATE >
   (to CL from RSV : response(ID, NAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, CL, IAF) else IAF fi),
-                    msgsSent: (if monitorDetailedMsgStats? then incr(ID', CL, IAF') else IAF' fi),
-                    totalRcv: incrAF(CL, AF),
-                    totalSent: incrAF(CL, AF'),
-                    clientQSent: s N,
-                    clientQAnswered: s N',
-                    clientQServfail: (if RCODE == 2 then s N'' else N'' fi),
-                    clQueryLog: (if monitorQueryLog? then tupleAddrQuery(CL, query(ID', QNAME, QTYPE)) TAQL else TAQL fi),
-                    clRespLog: (if monitorQueryLog? then tupleAddrResp(CL, response(ID, NAME, ANS, AUTH, ADD, RCODE)) TARL
-                                  else TARL fi),
-                    STATE' >
   < CL : Client | queries: QS, resolver: RSV, STATE >
   (to RSV from CL : query(ID', QNAME, QTYPE)) .
 
@@ -1394,17 +1170,9 @@ mod DNS is
   --- > Receive response from resolver (no queries left).
   --- Note: The client "accepts" any response coming from its resolver, even if it did not make a request.
   rl [client-recv-resp-done] :
-  < MON : Monitor | msgsRcv: IAF, totalRcv: AF, clientQAnswered: N', clientQServfail: N'', clRespLog: TARL, STATE' >
   < CL : Client | queries: nil, resolver: RSV, notifyDone: ADDR, STATE >
   (to CL from RSV : response(ID, QNAME, ANS, AUTH, ADD, RCODE))
 =>
-  < MON : Monitor | msgsRcv: (if monitorDetailedMsgStats? then incr(ID, CL, IAF) else IAF fi),
-                    totalRcv: incrAF(CL, AF),
-                    clientQAnswered: s N',
-                    clientQServfail: (if RCODE == 2 then s N'' else N'' fi),
-                    clRespLog: (if monitorQueryLog? then tupleAddrResp(CL, response(ID, QNAME, ANS, AUTH, ADD, RCODE)) TARL
-                                  else TARL fi),
-                    STATE' >
   < CL : Client | queries: nil, resolver: RSV, notifyDone: ADDR, STATE >
   if ADDR =/= nullAddr then
     (to ADDR from CL : stopSignal)

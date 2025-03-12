@@ -92,7 +92,6 @@ mod TEST is
   op initConfig : -> Config .
   eq initConfig = 
     --- Preliminaries
-    initMonitor(mAddr)
     (to cAddr : start)
     ---- NOTICE: client points to addrNScorporate as its resolver
     ----  the latter does the forwarding
@@ -120,16 +119,16 @@ endm
 --- uncomment for debugging purposes
 --- set trace on .
 
-set trace condition off . --- This does not seem to work
-set trace whole off .
-set trace substitution off .
-set trace mb off .
-set trace eq off .
-set trace rl on . --- on
-set trace select off .
-set trace rewrite off .
-set trace body off .
-set trace builtin off .
+--- set trace condition off . --- This does not seem to work
+--- set trace whole off .
+--- set trace substitution off .
+--- set trace mb off .
+--- set trace eq off .
+--- set trace rl on . --- on
+--- set trace select off .
+--- set trace rewrite off .
+--- set trace body off .
+--- set trace builtin off .
 
 set print attribute on .
 
