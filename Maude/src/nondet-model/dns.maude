@@ -154,9 +154,7 @@ mod DNS is
      tupleQSSQSSIdNatMap(QSS_SEND, QSS_ABORT, IN'') := splitQSSWorkBudget(QSS_KNOWN_ADDR, IN') /\
      --- Failed queries: Client queries without known addresses for which a follow-up query has been aborted due to
      --- exceeded work budget
-     QSS_FAILED := filterQSSClientQueriesToAbort((QSS_UNKNOWN_ADDR ;; QSS_ABORT), QSS_ABORT) 
-     [print "resolver-recv-query NAME " NAME " NA " NA " QNNAME " QNAME " QT " QTYPE " SNAME_FULL " SNAME_FULL]
-     .
+     QSS_FAILED := filterQSSClientQueriesToAbort((QSS_UNKNOWN_ADDR ;; QSS_ABORT), QSS_ABORT) .
 
   ---------------------
   --- [NAME SERVER] ---
