@@ -208,7 +208,7 @@ mod DNS is
   [delay, to ADDR from NS : query(ID, QNAME, QTYPE), drop?]
   if 
     --- rule only applicable when resource bounds are disabled
-     not(nsResourceBounds?) /\
+     not(nsResourceBounds?)
     /\ ADDR =/= nullAddr --- have forwarding
     /\ not isAuthoritativeForName(QNAME, DB)
     .
