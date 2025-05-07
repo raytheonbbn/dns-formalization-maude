@@ -1,9 +1,13 @@
-FROM ubuntu:kinetic
+FROM ubuntu:jammy
+
+# Uncomment to get updates and packages using older ubuntu images, e.g. kinetic has reached its EOL in June 2023
+#RUN sed -i -r 's/([a-z]{2}.)?archive.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+#RUN sed -i -r 's/security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
 
 # Libtinfo necessary for maude, others are basic tools
 RUN apt-get update \
   && apt-get install -y \
-	coreutils \ 
+	coreutils \
 	libtinfo5 \
 	nano \
 	python3 \
@@ -16,7 +20,6 @@ RUN apt-get update \
 
 # Test installing docker via pip, https://github.com/docker/docker-py/issues/3113
 #RUN pip install docker
-# Or test
 
 
 # Install Maude
@@ -25,28 +28,27 @@ RUN mkdir MAUDE_EXP
 COPY Maude /MAUDE_EXP
 # Download and unzip Maude 2.7.1
 RUN wget https://maude.cs.illinois.edu/w/images/5/5d/Maude-2.7.1-linux.zip
-RUN unzip Maude-2.7.1-linux.zip -d /maude
-# Add permissions
-RUN chmod +x /maude/ 
+RUN unzip Maude-2.7.1-linux.zip -d /usr/bin/maude
+# Add permissions to execute maude
+RUN chmod +x /usr/bin/maude/maude.linux64
 
 # Add Maude to PATH
-# This line below is really important
-ENV PATH "$PATH:/maude/maude.linux64"
+# This line below is important
+ENV PATH "$PATH:/usr/bin/maude/maude.linux64"
 
-RUN echo 'export PATH="$PATH:/maude/maude.linux64"' >> ~/.bashrc
-RUN echo "alias maude=/maude/maude.linux64"  >> ~/.bashrc
-RUN echo "export MAUDE_LIB='/maude'"  >> ~/.bashrc
-RUN chmod +x /maude/maude.linux64
+RUN echo 'export PATH="$PATH:/usr/bin/maude/maude.linux64"' >> ~/.bashrc
+RUN echo "alias maude=/usr/bin/maude/maude.linux64"  >> ~/.bashrc
+RUN echo "export MAUDE_LIB='/usr/bin/maude'"  >> ~/.bashrc
 
 # Update the variables
 RUN ["/bin/bash", "-c", "source ~/.bashrc"]
 
 ENV PATH "$PATH:/bin/bash"
 
-# Copy and set the script that will run Maude experiment
+# Copy and set the script that will run Maude experiments
 COPY script-maude-allOSes.sh /
 RUN chmod +x script-maude-allOSes.sh
 
-#RUN ["/bin/bash", "-c", "./script.sh"]
+#RUN ["/bin/bash", "-c", "./script-maude-allOSes.sh"]
 #RUN service docker start
 
