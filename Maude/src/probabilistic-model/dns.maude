@@ -220,7 +220,7 @@ mod DNS is
   {T, to NS from ADDR : response(ID, SNAME, ANS, AUTH, ADD, RCODE)}
 =>
   < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: (TAQL1 TAQL), STATE >
-  [delay, to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE), drop?]
+  [delay-to-requester, to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE), drop?]
     .
 
 ***** TODO update these two rules to accommodate DNS forwarding

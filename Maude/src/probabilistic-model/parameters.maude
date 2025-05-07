@@ -10,14 +10,19 @@ mod PARAMETERS is
   --- eq limit = 1000.0 .
   
   --- delays must be sampled from a continuous probability distribution 
-  op delay : -> Float .  --- message delay
-  eq delay = sampleLogNormal(0.0, 1.0) .
-  
+  op delay : -> Float .
+  eq delay = 0.005 + genRandom(0., 0.0001) . ---sampleLogNormal(0.0, 1.0) . ---0.01 .
+
+  --- delay from the DNS core to the requester, which may be in a corporate subnet (faster).
+  op delay-to-requester : -> Float .
+  eq delay-to-requester = 0. + genRandom(0., 0.00001) .
+
   op id : -> Float . --- initial delay
   eq id = sampleExp(1.0) .
   
   op drop? : -> Nat .  --- 1 denotes "dropped msg"; owise, 0
   eq drop? = 0 .
+---  eq drop? = if rand > 0.1 then 0 else 1 fi .
 
   --- Resolver timeouts
   op rsvTimeout? : -> Bool .
