@@ -4,6 +4,7 @@ mod DNS is
   inc AUX + MSG + PARAMETERS .
 
   --- Variables
+  var msg : Msg .   ---- to simplify sched msgs
   var C : Config .
   vars CL RSV NS ADDR ADDR' MON : Address .
   vars ID ID' : Id .
@@ -60,7 +61,10 @@ mod DNS is
   {T, to CL : start}
 =>  
   < CL : Client | queries: QS, resolver: RSV, STATE >
-  [delay, to RSV from CL : query(ID, QNAME, QTYPE), drop?] .
+*** Non parameterized delay and drop: [delay, to RSV from CL : query(ID, QNAME, QTYPE), drop?] 
+  [delayParamd(to RSV from CL : query(ID, QNAME, QTYPE)), 
+   to RSV from CL : query(ID, QNAME, QTYPE),
+   dropParamd(to RSV from CL : query(ID, QNAME, QTYPE))] .
 
   ------------------
   --- [RESOLVER] ---
@@ -79,7 +83,9 @@ mod DNS is
                      nxdomainCache: filterNxdomainCacheTTLGreaterThan(NXDOMAIN_CACHE_UNEXPIRED, T),
                      nodataCache: filterNodataCacheTTLGreaterThan(NODATA_CACHE_UNEXPIRED, T),
                      STATE >
-  [delay, to CL from RSV : convertTTLAbsToRelResponse(RESP, T), drop?]
+*** Non parameterized delay and drop: [delay, to CL from RSV: convertTTLAbsToRelResponse(RESP, T), drop?]
+  [delayParamd(msg), msg, dropParamd(msg)]
+
   if
      --- Prune expired records from cache
      CACHE_UNEXPIRED := filterCacheTTLGreaterEqual(CACHE, T) /\
@@ -100,7 +106,9 @@ mod DNS is
                CACHE_TMP, NXDOMAIN_CACHE_UNEXPIRED, NODATA_CACHE_UNEXPIRED,
                rsvMinCacheCredClient, QNAME
              ) /\
-     rcode(RESP) =/= cacheMissRcode .
+     rcode(RESP) =/= cacheMissRcode 
+     /\ msg := to CL from RSV : convertTTLAbsToRelResponse(RESP, T)
+     .
 
   ------------------
   --- [RESOLVER] ---
@@ -191,11 +199,13 @@ mod DNS is
   {T, to NS from RSV : query(ID, QNAME, QTYPE)}
 =>
   < NS : Nameserver | db: DB, forwardonly: ADDR, STATE >
-  [delay, to RSV from NS : RESP, drop?]
+  [delayParamd(msg), msg, dropParamd(msg)]
+*** Non parameterized delay:  [delay, to RSV from NS : RESP, drop?]
   if (ADDR == nullAddr or isAuthoritativeForName(QNAME, DB))
   --- rule only applicable when resource bounds are disabled
   /\ not(nsResourceBounds?) 
-  /\ RESP := matchDown(ID, QNAME, QTYPE, DB) .
+  /\ RESP := matchDown(ID, QNAME, QTYPE, DB) 
+  /\ msg := to RSV from NS : RESP .
 
 
   --- > Receive query from client, not authoritative for the name, and have forwaders block
@@ -205,12 +215,13 @@ mod DNS is
   {T, to NS from CL : query(ID, QNAME, QTYPE)}
 =>
   < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: (tupleAddrQuery(CL, query(ID, QNAME, QTYPE)) TAQL), STATE >
-  [delay, to ADDR from NS : query(ID, QNAME, QTYPE), drop?]
+  [delayParamd(msg), msg, dropParamd(msg)]
   if 
     --- rule only applicable when resource bounds are disabled
      not(nsResourceBounds?)
     /\ ADDR =/= nullAddr --- have forwarding
     /\ not isAuthoritativeForName(QNAME, DB)
+    /\ msg := to ADDR from NS : query(ID, QNAME, QTYPE)
     .
 
   --- > Receive response for a client query that was forwarded before
@@ -220,7 +231,9 @@ mod DNS is
   {T, to NS from ADDR : response(ID, SNAME, ANS, AUTH, ADD, RCODE)}
 =>
   < NS : Nameserver | db: DB, forwardonly: ADDR, queriesFwd: (TAQL1 TAQL), STATE >
-  [delay-to-requester, to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE), drop?]
+  [delayParamd(to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE)), 
+   to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE), 
+   dropParamd(to CL from NS : response(ID, SNAME, ANS, AUTH, ADD, RCODE))]
     .
 
 ***** TODO update these two rules to accommodate DNS forwarding
@@ -300,7 +313,7 @@ mod DNS is
                      blockedQueries: QSS,
                      sentQueries: QSS',
                      STATE >
-  [delay, to ADDR from RSV : convertTTLAbsToRelResponse(RESP, T), drop?]
+  [delayParamd(msg), msg, dropParamd(msg)]
   if
      queryState(query(ID, QNAME, QTYPE), ADDR, SNAME, ID', qminState(SNAME_FULL, N, N', B), ANS', SLIST) := QSTATE /\
      --- Rule only applies for client queries
@@ -334,7 +347,9 @@ mod DNS is
      CACHE' := updateCacheAuthAns(CACHE_UNEXPIRED, ANS, T) /\
      CACHE'' := updateCacheCred(CACHE', AUTH ADD, 1, T) /\
      NXDOMAIN_CACHE' := updateNxdomainCache(NXDOMAIN_CACHE_UNEXPIRED, SNAME, ANS, AUTH, RCODE, T) /\
-     NODATA_CACHE' := updateNodataCache(NODATA_CACHE_UNEXPIRED, SNAME, QTYPE, ANS, AUTH, RCODE, T) .
+     NODATA_CACHE' := updateNodataCache(NODATA_CACHE_UNEXPIRED, SNAME, QTYPE, ANS, AUTH, RCODE, T) 
+     /\ msg :=  to ADDR from RSV : convertTTLAbsToRelResponse(RESP, T)
+     .
 
   ------------------
   --- [RESOLVER] ---
@@ -445,7 +460,7 @@ mod DNS is
                      blockedQueries: QSS,
                      sentQueries: QSS',
                      STATE >
-  [delay, to ADDR from RSV : convertTTLAbsToRelResponse(RESP, T), drop?]
+  [delayParamd(msg), msg, dropParamd(msg)]
   if
      queryState(query(ID, QNAME, QTYPE), ADDR, SNAME, ID', qminState(SNAME_FULL, N, N', B), ANS', SLIST) := QSTATE /\
      --- Rule only applies for client queries
@@ -475,7 +490,9 @@ mod DNS is
                CACHE'', NXDOMAIN_CACHE', NODATA_CACHE',
                rsvMinCacheCredClient, QNAME
              ) /\
-     rcode(RESP) =/= cacheMissRcode .
+     rcode(RESP) =/= cacheMissRcode 
+     /\ msg := to ADDR from RSV : convertTTLAbsToRelResponse(RESP, T)
+     .
 
   ------------------
   --- [RESOLVER] ---
@@ -677,7 +694,7 @@ mod DNS is
                      blockedQueries: QSS,
                      sentQueries: QSS',
                      STATE >
-  [delay, to ADDR from RSV : convertTTLAbsToRelResponse(RESP, T), drop?]
+  [delayParamd(msg), msg,  dropParamd(msg)]
   if
      queryState(query(ID, QNAME, QTYPE), ADDR, SNAME, ID', qminState(SNAME_FULL, N, N', B), ANS', SLIST) := QSTATE /\
      --- Rule only applies for client queries
@@ -719,7 +736,9 @@ mod DNS is
                CACHE'', NXDOMAIN_CACHE', NODATA_CACHE',
                rsvMinCacheCredClient, QNAME
              ) /\
-     rcode(RESP) =/= cacheMissRcode .
+     rcode(RESP) =/= cacheMissRcode
+     /\  msg := to ADDR from RSV : convertTTLAbsToRelResponse(RESP, T)
+ .
 
   ------------------
   --- [RESOLVER] ---
@@ -1334,8 +1353,10 @@ mod DNS is
                      blockedQueries: filterQSSNotFollowUpOfId(QSS, ID),
                      sentQueries: filterQSSNotFollowUpOfId(QSS', ID),
                      STATE >
-  [delay, to ADDR from RSV : response(ID, QNAME, nil, nil, nil, 2), drop?]
-  if idInQSSOriginal(ID, QSS ;; QSS') .
+  [delayParamd(msg),msg, dropParamd(msg)]
+  if idInQSSOriginal(ID, QSS ;; QSS') 
+  /\ msg := to ADDR from RSV : response(ID, QNAME, nil, nil, nil, 2)
+  .
 
   ------------------
   --- [RESOLVER] ---
@@ -1393,7 +1414,9 @@ mod DNS is
   {T, to CL from RSV : response(ID, NAME, ANS, AUTH, ADD, RCODE)}
 =>
   < CL : Client | queries: QS, resolver: RSV, STATE >
-  [delay, to RSV from CL : query(ID', QNAME, QTYPE), drop?] .
+  [delayParamd(to RSV from CL : query(ID', QNAME, QTYPE)), 
+  to RSV from CL : query(ID', QNAME, QTYPE), 
+  dropParamd(to RSV from CL : query(ID', QNAME, QTYPE))] .
 
   ----------------
   --- [CLIENT] ---
