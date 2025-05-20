@@ -1,17 +1,19 @@
 from .conversion_utils import name_to_maude
 from .zone import Zone, lookup
 from .actors import Nameserver, DelayedNameserver, Client
+from .network import ParameterizedNetwork
 
 PATH_TO_PROJECT_DIR = '../../'
 
 class Config:
     
-    def __init__(self, clients, resolvers, nameservers, root_nameservers) -> None:
+    def __init__(self, clients, resolvers, nameservers, root_nameservers, network) -> None:
         self.clients = clients
         self.resolvers = resolvers
         self.nameservers = nameservers
 
         self.root_nameservers = root_nameservers
+        self.network  = network
 
         self.monitor_address = 'mAddr'
 
@@ -106,6 +108,9 @@ class Config:
 
         res += self._to_maude_common_definitions(param_dict)
 
+        res += "\n\n"
+        res += self.to_maude_network()
+
         res += '--- Initial configuration\n'
         res += 'op initConfig : -> Config .\n'
         res += 'eq initConfig = run(initState, limit) .\n\n'
@@ -117,7 +122,6 @@ class Config:
             res += f'  [id, to {client.address} : start, 0]\n'
         res += self._to_maude_actors()
         res += '  .\n\n'
-
         res += 'endm\n'
         
         return res

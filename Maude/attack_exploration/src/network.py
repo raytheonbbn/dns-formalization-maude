@@ -34,22 +34,58 @@ class ParameterizedNetwork:
   The class for defining a network with parameterized links: i.e., the network
   can be defined as a set of links with different attributes.
   '''
-  def __init__(self, nodes, links, link_characteristics_args) -> None:
+  def __init__(self, nodes, edge_info) -> None:
     '''
     Constructor.
-    nodes: The list of node names as they will appear in the rest of the config.
-    links: The dictionary of link args as a link : linkType.
-    link_characteristics_args:  The dictionary of link attributes
-                                linkType : link obj.
+    nodes: The list of nodes (resolvers, clients, etc.).
+    edge_info: The DiGraph edges with data.
     '''
-    self.nodes  = nodes
-    self.link_dict  = dict()
-    for link_type in link_characteristics_args:
-      link_characteristics = link_characteristics_args.get(link_type)
-      self.link_dict[link_type] = ParameterizedLink(link_characteristics)
+    self.nodes            = nodes
+    self.edge_info        = edge_info
+    self.links            = dict()
+    self.link_characteristics = dict()
+    self.link_type_number = 0
 
-    self.links  = links
-    self.parameters = link_characteristics_args
+    for link_name, info in self.edge_info.items():
+      link  = ParameterizedLink(info)
+      link_type = self.get_link_type(link)
+      if not link_type in self.link_characteristics:
+        self.link_characteristics[link_type]  = link
+      self.links[link_name] = link_type
+
+
+  def get_link_type(self, link) -> str:
+    """
+    Get the link type for a link.  If this is a new type, create a new name for
+    it.
+
+    link: The link for which a type is needed.
+    """
+    # Look through the link characteristics,
+    for link_type, existing_link in self.link_characteristics.items():
+      # If one like this already exists, use that type.
+      if existing_link.is_equal_to(link):
+        return link_type
+
+    # Did not find a link with the same characteristics; make a new type.
+    link_type = f"LinkType-{self.link_type_number}"
+    self.link_type_number += 1
+    return link_type
+       
+
+  def to_string(self) -> str:
+    """
+    Create a printable string for this object.
+
+    Return the printable string of the object.
+    """
+    s  = "ParameterizedNetwork:\n"
+    s += f"Nodes: {self.nodes}\n"
+    s += f"Links: {self.links}\n"
+    s += f"Link characteristic:\n"
+    for  link, characteristics in self.link_characteristics.items():
+      s += f"{link} -> {characteristics.to_string()}\n"
+    return s
 
 
   def to_maude_network(self) -> str:
@@ -58,7 +94,7 @@ class ParameterizedNetwork:
     Return the string of the maude code to place in experiment file.
     '''
     maude_str   = " --- Link Characteristic definitions\n"
-    for link_type, link in self.link_dict.items():
+    for link_type, link in self.link_characteristics.items():
       maude_str  += f"op {link_type} : -> AttributeSet .\n"
       maude_str  += f"eq {link_type} = \n"
       maude_str  += link._to_maude()
@@ -84,36 +120,86 @@ class ParameterizedNetwork:
         source_str, dest_str  = link.split("->")
       elif "<-" in link:
         dest_str, source_str  = link.split("<-")
+      print(f"Looking for {source_str} in {list(map(lambda node: node.address, self.nodes))}")
+      print(f"Looking for {dest_str} in {list(map(lambda node: node.address, self.nodes))}")
       # Get the proper node address (we have names that are just a partial 
       # match). nodes will looks something like: [addrNScorporate, addrNSpwnd2, 
       #                                           rAddr]
       # and the source and dest addresses are more like: pwnd2 or corporate.
-      source_address  = list(map(lambda node: node.address, filter(
-        lambda source_addr: source_str in source_addr.address, self.nodes)))[0]
-      dest_address  = list(map(lambda node: node.address, filter(
-        lambda dest_addr: dest_str in dest_addr.address, self.nodes)))[0]
-      maude_str += f"  aaa({source_address},{dest_address},{link_type})\n"
+      try:
+        source_address  = list(map(lambda node: node.address, filter(
+          lambda source_addr: source_str in source_addr.address, self.nodes)))[0]
+        dest_address  = list(map(lambda node: node.address, filter(
+          lambda dest_addr: dest_str in dest_addr.address, self.nodes)))[0]
+        maude_str += f"  aaa({source_address},{dest_address},{link_type})\n"
+      except Exception as e:
+        print(f"Error {e}")
     maude_str += "  .\n"
     return maude_str
+
 
 
 class ParameterizedLink:
   '''
   The class for defining parameterized links.
   '''
-  def __init__(self, parameters_args) -> None:
+  def __init__(self, link_info) -> None:
     '''
     Constructor.
-    parameters_args:  The dict of arguments for a link (see below).
+    link_info: The DiGraph edges with data.
     '''
-    self.delayType  = parameters_args.get("delayType", "constant")
-    self.noiseMin   = parameters_args.get("noiseMin", 0.0)
-    self.noiseMax   = parameters_args.get("noiseMax", 0.00001)
-    self.delayConst = parameters_args.get("delayConst", 0.)
-    self.delayMean  = parameters_args.get("delayMean", 0.)
-    self.delayStd   = parameters_args.get("delayStd", 0.)
-    self.canDrop    = parameters_args.get("canDrop", False)
-    self.dropP      = parameters_args.get("dropP", 0.)
+    self.delayStd   = link_info.get("jitter", 0.)
+    self.delayType  = "Constant" if self.delayStd == 0. else "Normal"
+    self.delayMean  = 0. if self.delayStd == 0. else link_info.get("latency", 0.005) 
+    self.delayConst = link_info.get("latency", 0.005) if self.delayStd == 0. else 0.
+    self.noiseMin   = 0. if self.delayStd == 0. else 0.
+    self.noiseMax   = 0.00001 if self.delayStd == 0. else 0.
+
+    self.dropP      = link_info.get("loss", 0.)
+    self.canDrop    = self.dropP != 0.
+
+
+  def to_string(self) -> str:
+    """
+    Create a printable string for this object.
+
+    Return the printable string of the object.
+    """
+    s  = f"Chars: Type {self.delayType}, "
+    s += f"Delay: {self.delayConst}, "
+    s += f"NoiseMin: {self.noiseMin}, "
+    s += f"NoiseMax: {self.noiseMax}, "
+    s += f"Mean: {self.delayMean}, "
+    s += f"Std: {self.delayStd}, "
+    s += f"canDrop: {self.canDrop}, "
+    s += f"prob: {self.dropP}"
+    return s
+
+
+  def is_equal_to(self, link):
+    """
+    Compare a link to this object.
+
+    link: The link to which to compare.
+    """
+    if self.delayType == "Constant":
+      delay_sameness = link.delayType == self.delayType and \
+        link.delayConst == self.delayConst and \
+        link.noiseMin == self.noiseMin and \
+        link.noiseMax == self.noiseMax
+    else:
+      delay_sameness = link.delayType == self.delayType and \
+        link.delayMean == self.delayMean and \
+        link.delayStd == self.delayStd
+
+    if self.canDrop:
+      drop_sameness = link.canDrop == self.canDrop and \
+        link.dropP == self.dropP
+    else:
+      drop_sameness = link.canDrop == self.canDrop
+
+    return delay_sameness and drop_sameness
+
 
   def _to_maude(self) -> str:
     '''
