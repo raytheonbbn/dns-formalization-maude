@@ -120,8 +120,6 @@ class ParameterizedNetwork:
         source_str, dest_str  = link.split("->")
       elif "<-" in link:
         dest_str, source_str  = link.split("<-")
-      print(f"Looking for {source_str} in {list(map(lambda node: node.address, self.nodes))}")
-      print(f"Looking for {dest_str} in {list(map(lambda node: node.address, self.nodes))}")
       # Get the proper node address (we have names that are just a partial 
       # match). nodes will looks something like: [addrNScorporate, addrNSpwnd2, 
       #                                           rAddr]
