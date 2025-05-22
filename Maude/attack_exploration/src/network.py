@@ -29,29 +29,57 @@
 import logging
 logger = logging.getLogger(__name__)
 
+
 class ParameterizedNetwork:
   '''
   The class for defining a network with parameterized links: i.e., the network
   can be defined as a set of links with different attributes.
+
+  How to use:
+  Initialize with edge information.
+  Call create links with link definitions (source->dest).
+
+  Currently this class only supports unidirectionality. TODO: Support <->.
+  Finally, call to_maude_network.
   '''
-  def __init__(self, nodes, edge_info) -> None:
+  def __init__(self, edge_info) -> None:
     '''
     Constructor.
     nodes: The list of nodes (resolvers, clients, etc.).
     edge_info: The DiGraph edges with data.
     '''
-    self.nodes            = nodes
-    self.edge_info        = edge_info
-    self.links            = dict()
+    # Edge characteristics: includes latency, jitter, etc.
+    self.edge_info  = edge_info
+    # Links as source->dest pairs mapped to a link type.
+    self.links      = dict()
+    # Characteristics for each link type.
     self.link_characteristics = dict()
+    # Link type counter.
     self.link_type_number = 0
 
-    for link_name, info in self.edge_info.items():
-      link  = ParameterizedLink(info)
+
+  def create_links(self, nodes, links: dict) -> None:
+    '''
+    Create the links with the right characteristics and proper names.
+
+    nodes:  The nodes in the topology, as nameservers, etc.
+    links:  The link definitions (source->dest, etc.).
+    '''
+    self.nodes  = nodes
+    for source_dest, default_info in links.items():
+      source, dest = source_dest.split("->")
+      link_name = f"{source}->{dest}"
+      info = self.edge_info.get(f"{link_name}", None)
+      if info is None:
+        logger.info(f"Did not find {link_name}, reversing direction.")
+        link_name = f"{dest}->{source}"
+        info = self.edge_info.get(f"{link_name}", None)
+      link = ParameterizedLink(info)
       link_type = self.get_link_type(link)
       if not link_type in self.link_characteristics:
         self.link_characteristics[link_type]  = link
-      self.links[link_name] = link_type
+      self.links[f"{link_name}"] = link_type
+
 
 
   def get_link_type(self, link) -> str:
@@ -146,11 +174,25 @@ class ParameterizedLink:
     Constructor.
     link_info: The DiGraph edges with data.
     '''
-    self.delayStd   = link_info.get("jitter", 0.)
+    if link_info is None:
+      # Default link, when nothing is specified.
+      self.delayType  = "Constant"
+      self.delayMean  = 0.
+      self.delayStd   = 0.
+      self.delayConst = 0.002
+      self.noiseMin   = 0.
+      self.noiseMax   = 0.00001
+
+      self.canDrop    = False
+      self.dropP      = 0.
+      return
+
+    self.delayStd   = link_info.get("jitter", 0.) * 0.667
     self.delayType  = "Constant" if self.delayStd == 0. else "Normal"
+    # T&E V1 used RTT times, this is compatible with V2.
     self.delayMean  = 0. if self.delayStd == 0. else link_info.get("latency", 0.005) 
     self.delayConst = link_info.get("latency", 0.005) if self.delayStd == 0. else 0.
-    self.noiseMin   = 0. if self.delayStd == 0. else 0.
+    self.noiseMin   = 0.
     self.noiseMax   = 0.00001 if self.delayStd == 0. else 0.
 
     self.dropP      = link_info.get("loss", 0.)
