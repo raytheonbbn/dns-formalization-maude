@@ -160,7 +160,7 @@ class ParameterizedNetwork:
           lambda source_addr: source_str in source_addr.address, self.nodes)))[0]
         dest_address  = list(map(lambda node: node.address, filter(
           lambda dest_addr: dest_str in dest_addr.address, self.nodes)))[0]
-        maude_str += f"  aaa({source_address},{dest_address},{link_type})\n"
+        maude_str += f"  aaa({dest_address},{source_address},{link_type})\n"
       except Exception as e:
         print(f"Error {e}")
     maude_str += "  .\n"
