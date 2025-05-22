@@ -34,10 +34,13 @@ class ParameterizedNetwork:
   '''
   The class for defining a network with parameterized links: i.e., the network
   can be defined as a set of links with different attributes.
+  It will try to create a new link profile for a set of parameters that are new,
+  otherwise, it will link to that existing link profile.
 
   How to use:
   Initialize with edge information.
   Call create links with link definitions (source->dest).
+  Call to write to maude language.
 
   Currently this class only supports unidirectionality. TODO: Support <->.
   Finally, call to_maude_network.
