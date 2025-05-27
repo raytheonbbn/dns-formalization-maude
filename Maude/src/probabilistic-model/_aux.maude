@@ -91,7 +91,7 @@ mod AUX is
     = if ADDR' == ADDR
        --- don't send failure responses to the self
       then sendFailureResponses(QSS, ADDR) 
-      else [delay, MSG, drop?] 
+      else [delayParamd(MSG), MSG, dropParamd(MSG)] 
            sendFailureResponses(QSS, ADDR)
       fi
   if queryState(query(ID, QNAME, QTYPE), ADDR', SNAME, ID',
