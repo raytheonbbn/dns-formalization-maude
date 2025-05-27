@@ -7,7 +7,7 @@ PATH_TO_PROJECT_DIR = '../../'
 
 class Config:
     
-    def __init__(self, clients, resolvers, nameservers, root_nameservers, network) -> None:
+    def __init__(self, clients, resolvers, nameservers, root_nameservers, network:ParameterizedNetwork = None) -> None:
         self.clients = clients
         self.resolvers = resolvers
         self.nameservers = nameservers
@@ -108,8 +108,9 @@ class Config:
 
         res += self._to_maude_common_definitions(param_dict)
 
-        res += "\n\n"
-        res += self.to_maude_network()
+        if self.network:
+            res += "\n\n"
+            res += self.to_maude_network()
 
         res += '--- Initial configuration\n'
         res += 'op initConfig : -> Config .\n'
