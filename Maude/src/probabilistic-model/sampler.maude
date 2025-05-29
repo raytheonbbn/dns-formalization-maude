@@ -31,6 +31,9 @@ mod SAMPLER is
 
   vars MEAN SD : Float .    --- mean and standard deviation
 
+  op sampleNormalWithMeanSd : Float Float -> [Float] .
+  eq sampleNormalWithMeanSd(MEAN, SD) = MEAN + SD * sampleNormal .
+
   op sampleLogNormal : Float Float -> [Float] .
   eq sampleLogNormal(MEAN, SD) = exp(MEAN + SD * sampleNormal) .
 
