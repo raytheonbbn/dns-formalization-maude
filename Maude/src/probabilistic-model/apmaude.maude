@@ -62,6 +62,8 @@ mod SCHEDULER is
 
   --- insert a schedule msg to the scheduler 
   eq [ t1, M1, 0 ] S = insert(S, [ t1, M1, 0 ]) .
+  eq [ t1, M1, P ] { GT | SL } = { GT | SL }
+     [owise print "(" GT ") Drop message " "[" t1 ", " M1  "]" ] .
   eq [ t1, M1, P ] S = S [owise] .
 
   eq step(AC {GT | [ t1 , M1, 0 ] ; SL}) 
