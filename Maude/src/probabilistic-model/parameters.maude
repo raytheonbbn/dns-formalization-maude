@@ -24,7 +24,7 @@ mod PARAMETERS is
 vars ADDR ADDR' ADDR'' : Address .
 vars B  : Bool .
 vars msg  : Msg .
-vars P fl : Float .
+vars P fl fl' : Float .
 var ldata : AdrAdrAttrsSet .
 var attrs : AttributeSet .
 var str : String .
@@ -47,8 +47,10 @@ op canDrop:_    : Bool -> Attribute [ctor] .
 op dropP:_      : Float -> Attribute [ctor] .
 op noiseMax:_   : Float -> Attribute [ctor] .
 op noiseMin:_   : Float -> Attribute [ctor] .
+*** Supported delay types: Constant, Uniform, all other default to Normal.
 op delayType:_  : String ->  Attribute [ctor] .
 op delayConst:_ : Float ->  Attribute [ctor] .
+op delayConstMax:_ : Float -> Attribute [ctor] .
 op delayMean:_  : Float ->  Attribute [ctor] .
 op delayStd:_   : Float ->  Attribute [ctor] .
 
@@ -122,6 +124,7 @@ eq dropParamd(msg) =
 **** Message size could be a factor in the long run
 
 op delayConst : Msg -> Float .
+op delayConstMax : Msg -> Float .
 op delayType : Msg -> String .
 op delayMean : Msg -> Float .
 op delayStd : Msg -> Float .
@@ -159,6 +162,12 @@ eq delayConst(msg) = 0.0 [owise] .
 ***   .
 *** eq delayMean(msg) = 0.0 [owise] .
 *** )
+
+ceq delayConstMax(msg) = fl
+  if (attrs, (delayConstMax: fl), (delayConst: fl')) := getLinkData(msg)
+  /\ fl >= fl'
+  .
+eq delayConstMax(msg) = 0.0 [owise] .
 
 ceq delayMean(msg) = fl
   if (attrs, (delayMean: fl)) := getLinkData(msg)
@@ -214,7 +223,10 @@ op delayParamd : Msg -> Float .
 eq delayParamd(msg) =
   (if delayType(msg) == "Constant"
     then delayConst(msg) + genRandom(noiseMin(msg), noiseMax(msg))
-    else sampleNormalWithMeanSd(delayMean(msg), delayStd(msg))
+    else (if delayType(msg) == "Uniform"
+      then sampleUniform(delayConst(msg), delayConstMax(msg))
+      else sampleNormalWithMeanSd(delayMean(msg), delayStd(msg))
+      fi)
   fi)
   .
  

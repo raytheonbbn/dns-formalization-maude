@@ -5,6 +5,7 @@ mod SAMPLER is
 
   op sampleBerWithP : Float -> [Bool] .
   op sampleUniWithInt : Nat -> [Nat] .
+  op sampleUniform : Float Float -> [Float] .
   op genRandom : Float Float -> [Float] .
   op sampleExp : Float -> [Float] .
 
@@ -36,6 +37,9 @@ mod SAMPLER is
 
   op sampleLogNormal : Float Float -> [Float] .
   eq sampleLogNormal(MEAN, SD) = exp(MEAN + SD * sampleNormal) .
+
+  op sampleUniform : Float Float -> [Float] .
+  eq sampleUniform(Min, Max) = Min + rand * (Max - Min) .
 
   vars SHAPE SCALE : Float .  --- Shape k and scale lambda parameters
 
