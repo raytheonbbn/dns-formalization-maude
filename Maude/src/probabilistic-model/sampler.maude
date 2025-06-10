@@ -39,7 +39,7 @@ mod SAMPLER is
   eq sampleLogNormal(MEAN, SD) = exp(MEAN + SD * sampleNormal) .
 
   op sampleUniform : Float Float -> [Float] .
-  eq sampleUniform(Min, Max) = Min + rand * (Max - Min) .
+  eq sampleUniform(Min, Max) = (if (Min == Max) then Min else (Min + rand * (Max - Min)) fi) .
 
   vars SHAPE SCALE : Float .  --- Shape k and scale lambda parameters
 
