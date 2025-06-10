@@ -198,7 +198,8 @@ class ParameterizedLink:
     self.noiseMin   = 0.
     self.noiseMax   = 0.00001 if self.delayStd == 0. else 0.
 
-    self.dropP      = link_info.get("loss", 0.)
+    # Drop Probability (value must be between 0 and 1.)
+    self.dropP      = link_info.get("loss", 0.) / 100.
     self.canDrop    = self.dropP != 0.
 
 
