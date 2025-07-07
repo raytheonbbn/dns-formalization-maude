@@ -1274,17 +1274,27 @@ mod DNS is
      queryState(query(ID, QNAME, QTYPE), ADDR, SNAME, ID', QMIN_STATE, ANS, < NAME NA >) := QSTATE /\
      --- Only applies for client queries
      ADDR =/= RSV /\
+     ***(
+        --- JK: Commented out this behavior in order to match Bind9 implementation
+        ---  Bind9 will similarly go through the slist and try all servers if a query times out 
+        ---   but it if there is only one server in the list, it will retransmit up to 3 times it with 
+        ---   a fixed delay (800 ms) before it start exponential backoff 
+        ---   by not removing the failed server from the list, we force retransmission to it indefinitely 
+        ----  until the query is satisfied (which is an approximation)
+     ) 
      --- Remove name server from SLIST
-     NA' := removeNamesFromSLISTMap(NA, namesForAddressSLIST(NA, ADDR')) /\
+     ---NA' := removeNamesFromSLISTMap(NA, namesForAddressSLIST(NA, ADDR')) /\
      --- Remove other name servers from SLIST for which the address is unknown and no subqueries exist anymore
-     NA'' := removeNamesWithoutSubqueriesFromSLISTMap(NA', QSS ;; QSS', ID) /\
-     QSTATE' := queryState(query(ID, QNAME, QTYPE), ADDR, SNAME, ID' .. nxt, QMIN_STATE, ANS, < NAME NA'' >) /\
+     ---NA'' := removeNamesWithoutSubqueriesFromSLISTMap(NA', QSS ;; QSS', ID) /\
+     QSTATE' := queryState(query(ID, QNAME, QTYPE), ADDR, SNAME, ID' .. nxt, QMIN_STATE, ANS, < NAME NA >) /\
      --- Update work budget
      pairQSS(QSS_EMPTY, QSS_NONEMPTY) := splitQSSEmpty(QSTATE') /\
      pairQSS(QSS_KNOWN_ADDR, QSS_UNKNOWN_ADDR) := splitQSSKnownAddr(QSS_NONEMPTY) /\
      tupleQSSQSSIdNatMap(QSS_SEND, QSS_ABORT, IN') := splitQSSWorkBudget(QSS_KNOWN_ADDR, IN) /\
      --- Failed queries: The client query, if there are no name servers left or if its work budget is exceeded
-     QSS_FAILED := QSS_ABORT ;; QSS_EMPTY .
+     QSS_FAILED := QSS_ABORT ;; QSS_EMPTY 
+     [print "+++TIMEOUT at T " T " query id " ID' " QSS_SEND " QSS_SEND]
+     .
 
   ------------------
   --- [RESOLVER] ---

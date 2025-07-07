@@ -70,13 +70,13 @@ mod AUX is
          to ADDR from ADDR : timeout(ID', ADDR''), 
        0] --- add noise to avoid non-determinism
       sendQueriesWithTimeout(QSS, ADDR)
-  if queryState(query(ID, QNAME, QTYPE), ADDR', SNAME, ID',
-           qminState(SNAME_FULL, N, N', B), ANS, < NAME NA >) 
-      := QSTATE 
-  /\ ADDR'' := pickKnownAddr(NA) 
-  /\ MSG := to ADDR'' from ADDR :
-        query(ID', SNAME, if B then QTYPE else qminQTYPE fi)
-  .        
+    if queryState(query(ID, QNAME, QTYPE), ADDR', SNAME, ID',
+            qminState(SNAME_FULL, N, N', B), ANS, < NAME NA >) 
+        := QSTATE 
+    /\ ADDR'' := pickKnownAddr(NA) 
+    /\ MSG := to ADDR'' from ADDR :
+          query(ID', SNAME, (if B then QTYPE else qminQTYPE fi))
+      .        
         
   eq sendQueriesWithTimeout(eptQSS, ADDR) = null .
 
