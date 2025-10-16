@@ -1,4 +1,3 @@
-load prelim
 load parameters
 
 mod AUX-COMMON is 
