@@ -1,5 +1,5 @@
-load ../../src/probabilistic-model/dns
-load ../../src/probabilistic-model/sampler
+load ../../dns/probabilistic-model/dns
+load ../../common/probabilistic-model/sampler
 load test_helpers
 
 mod TEST is

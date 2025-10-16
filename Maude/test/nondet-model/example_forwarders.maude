@@ -1,4 +1,4 @@
-load ../../src/nondet-model/dns
+load ../../dns/nondet-model/dns
 load test_helpers
 
 --- This is the example is from the NXNS paper, Fig. 2

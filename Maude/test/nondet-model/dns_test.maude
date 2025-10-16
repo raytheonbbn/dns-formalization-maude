@@ -1,5 +1,5 @@
-load ../../src/nondet-model/dns
-load ../../src/nondet-model/properties
+load ../../dns/nondet-model/dns
+load ../../dns/nondet-model/properties
 load test_helpers
 
 mod TEST is

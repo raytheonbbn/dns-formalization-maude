@@ -1,6 +1,6 @@
 load ../common/test_helpers
-load ../../src/probabilistic-model/apmaude
-load ../../src/common/prelim
+load ../../common/apmaude
+load ../../dns/common/prelim
 
 mod TEST-HELPERS is
   inc TEST-HELPERS-COMMON + SCHEDULER + MONITOR .

@@ -1,4 +1,4 @@
-load ../../src/common/aux
+load ../../dns/common/aux
 
 --- some constants
 mod TEST is

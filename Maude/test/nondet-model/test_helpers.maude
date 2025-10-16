@@ -1,5 +1,5 @@
 load ../common/test_helpers
-load ../../src/common/prelim
+load ../../dns/common/prelim
 
 mod TEST-HELPERS is
   inc TEST-HELPERS-COMMON + MONITOR .

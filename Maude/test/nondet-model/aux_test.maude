@@ -1,4 +1,4 @@
-load ../../src/nondet-model/aux
+load ../../dns/nondet-model/aux
 
 --- some constants
 mod TEST is

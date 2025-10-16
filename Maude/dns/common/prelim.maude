@@ -1,4 +1,4 @@
-load actor
+load ../../common/actor
 
 fmod SORTS is
   inc ADDRESS .

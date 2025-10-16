@@ -1,4 +1,4 @@
-load ../../src/common/prelim
+load ../../dns/common/prelim
 
 mod TEST-HELPERS-COMMON is
   inc NODE + MONITOR .

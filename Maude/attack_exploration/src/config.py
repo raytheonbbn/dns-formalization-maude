@@ -94,10 +94,10 @@ class Config:
         """
 
         res = '\n'.join((
-                f'load {path}src/probabilistic-model/dns',
-                f'load {path}src/probabilistic-model/sampler',
+                f'load {path}dns/probabilistic-model/dns',
+                f'load {path}common/sampler',
                 f'load {path}test/probabilistic-model/test_helpers',
-                f'load {path}src/probabilistic-model/properties',
+                f'load {path}dns/probabilistic-model/properties',
                 f'load {path}attacker-models/probabilistic-model/attacker'
 
                 '\n--- This maude file has been created automatically from the Python representation.\n',
@@ -133,7 +133,7 @@ class Config:
         """
 
         res = '\n'.join((
-                f'load {path}src/nondet-model/dns',
+                f'load {path}dns/nondet-model/dns',
                 f'load {path}test/nondet-model/test_helpers',
 
                 '\n--- This maude file has been created automatically from the Python representation.\n',
@@ -164,9 +164,9 @@ class Config:
         """
 
         res = '\n'.join((
-                f'load {path}src/nondet-model/dns',
+                f'load {path}dns/nondet-model/dns',
                 f'load {path}test/nondet-model/test_helpers',
-                f'load {path}src/common/label_graph',
+                f'load {path}dns/common/label_graph',
                 f'load {path}model-checking/preds',
 
                 '\n--- This maude file has been created automatically from the Python representation.\n',

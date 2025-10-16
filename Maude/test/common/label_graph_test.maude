@@ -1,4 +1,4 @@
-load ../../src/common/label_graph
+load ../../dns/common/label_graph
 
 mod LABEL-GRAPH-TEST is
   inc LABEL-GRAPH .

@@ -1,7 +1,7 @@
-load ../../src/probabilistic-model/dns
-load ../../src/probabilistic-model/sampler
+load ../../dns/probabilistic-model/dns
+load ../../common/sampler
 load test_helpers
-load ../../src/probabilistic-model/properties
+load ../../dns/probabilistic-model/properties
 
 mod TEST is
   inc SAMPLER + APMAUDE + DNS + TEST-HELPERS + PROPERTIES .

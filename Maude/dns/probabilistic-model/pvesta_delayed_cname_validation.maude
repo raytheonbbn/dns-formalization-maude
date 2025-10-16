@@ -1,5 +1,5 @@
 load dns
-load sampler
+load ../../common/sampler
 load properties
 load ../../attacker-models/probabilistic-model/attacker
 

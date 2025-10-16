@@ -1,5 +1,5 @@
-load ../../src/probabilistic-model/dns
-load ../../src/probabilistic-model/sampler
+load ../../dns/probabilistic-model/dns
+load ../../common/sampler
 load test_helpers
 
 --- This is the example is from the NXNS paper, Fig. 2

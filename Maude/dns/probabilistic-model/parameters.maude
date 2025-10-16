@@ -1,6 +1,6 @@
 load ../common/parameters
-load sampler
-load apmaude
+load ../../common/sampler
+load ../../common/apmaude
 
 mod PARAMETERS is
   inc PARAMETERS-COMMON + SAMPLER + APMAUDE .
