@@ -1,0 +1,22 @@
+load sampler
+load apmaude
+
+mod PARAMETERS-BASE is
+  inc SAMPLER + APMAUDE .
+  
+  --- logical runtime limit for each simulation
+  eq limit = 100000000.0 .
+  --- eq limit = 1000.0 .
+  
+  --- delays must be sampled from a continuous probability distribution 
+  op delay : -> Float .  --- log normal message delay
+  eq delay = sampleLogNormal(0.0, 1.0) .
+  
+  op id : -> Float . --- initial delay
+  eq id = sampleExp(1.0) .
+  
+  op drop? : -> Nat .  --- 1 denotes "dropped msg"; owise, 0
+  eq drop? = 0 .
+
+endm
+eof

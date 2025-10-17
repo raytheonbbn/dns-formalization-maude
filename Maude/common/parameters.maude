@@ -1,0 +1,249 @@
+--- MAUDE_HCS: maude_hcs
+---
+--- Software Markings (UNCLASS)
+--- PWNDD Software
+---
+--- Copyright (C) 2025 RTX BBN Technologies Inc. All Rights Reserved
+---
+--- Contract No: HR00112590083
+--- Contractor Name: RTX BBN Technologies Inc.
+--- Contractor Address: 10 Moulton Street, Cambridge, Massachusetts 02138
+---
+--- The U.S. Government's rights to use, modify, reproduce, release, perform,
+--- display, or disclose these technical data and software are defined in the
+--- Article VII: Data Rights clause of the OTA.
+---
+--- This document does not contain technology or technical data controlled under
+--- either the U.S. International Traffic in Arms Regulations or the U.S. Export
+--- Administration Regulations.
+---
+--- DISTRIBUTION STATEMENT A: Approved for public release; distribution is
+--- unlimited.
+---
+--- Notice: Markings. Any reproduction of this computer software, computer
+--- software documentation, or portions thereof must also reproduce the markings
+--- contained herein.
+---
+--- MAUDE_HCS: end
+
+load parameters_base
+
+mod PARAMETERS-BASE-COMMON is
+  inc PARAMETERS-BASE .
+  
+******* begin Generalized Parameterized delay/drop
+
+vars ADDR ADDR' ADDR'' : Address .
+vars B  : Bool .
+vars msg  : Msg .
+vars P fl fl' : Float .
+var ldata : AdrAdrAttrsSet .
+var attrs : AttributeSet .
+var str : String .
+
+sorts AdrAdrAttrs  AdrAdrAttrsSet .
+subsort AdrAdrAttrs < AdrAdrAttrsSet .
+op aaa : Address Address AttributeSet -> AdrAdrAttrs [ctor] .
+op mtAAA : -> AdrAdrAttrsSet [ctor] .
+op __ : AdrAdrAttrsSet AdrAdrAttrsSet -> AdrAdrAttrsSet 
+        [ctor assoc comm id: mtAAA] .
+        
+*** To specify a link delay:
+***   Type: Constant or not
+***   If Constant: the delay is constant, within some noise (delayConst + rand(noiseMin, noiseMax)
+***   Else: the delay is log-normal distributed logNormal(delayMean, delayStd)
+*** To specify a link drop:
+***   If canDrop: specify drop probability dropP, which will be compared to roll of dice.
+op LinkData : -> AdrAdrAttrsSet . 
+op canDrop:_    : Bool -> Attribute [ctor] .
+op dropP:_      : Float -> Attribute [ctor] .
+op noiseMax:_   : Float -> Attribute [ctor] .
+op noiseMin:_   : Float -> Attribute [ctor] .
+*** Supported delay types: Constant, Uniform, all other default to Normal.
+op delayType:_  : String ->  Attribute [ctor] .
+op delayConst:_ : Float ->  Attribute [ctor] .
+op delayConstMax:_ : Float -> Attribute [ctor] .
+op delayMean:_  : Float ->  Attribute [ctor] .
+op delayStd:_   : Float ->  Attribute [ctor] .
+
+****TODO define setAttrs so LinkData can be based on common attrs
+
+
+
+**** For bidir links (attributes independent of direction)
+**** only need to specify one direction.
+
+op getLinkData : Msg -> AttributeSet .
+ceq getLinkData(to ADDR from ADDR' : c:Content) = attrs
+  if ldata aaa(ADDR,ADDR',attrs) := LinkData
+  .
+ceq getLinkData(to ADDR from ADDR' : c:Content) = attrs
+  if ldata aaa(ADDR',ADDR,attrs) := LinkData
+  .
+eq getLinkData(msg) = noneAS [owise] .
+
+**** Example dropParamd definition assuming LinkData attributes 
+**** canDrop and dropP in link data
+
+*** (
+**** for unidirectional links
+*** op canDrop : Msg -> Bool .
+*** ceq canDrop((to ADDR from ADDR' : c:Content) ) = B
+***   if ldata aaa(ADDR,ADDR',(attrs, (canDrop: B))) := LinkData
+***   .
+*** eq canDrop(msg) = false [owise] .
+*** )
+
+op canDrop : Msg -> Bool .
+ceq canDrop(msg) = B
+  if (attrs, (canDrop: B)) := getLinkData(msg)
+  .
+eq canDrop(msg) = false [owise] .
+
+*** (
+**** for unidirectional links
+*** op dropProb : Msg -> Float .
+*** ceq dropProb((to ADDR from ADDR' : c:Content)) = fl
+***   if ldata aaa(ADDR,ADDR',(attrs, (dropP: fl))) := LinkData
+***   .
+*** eq dropProb(msg) = 0.0 [owise] .
+*** )
+
+op dropProb : Msg -> Float .
+ceq dropProb(msg) = fl
+  if (attrs, (dropP: fl)) := getLinkData(msg)
+  .
+eq dropProb(msg) = 0.0 [owise] .
+
+
+*** dropParamd
+op dropParamd : Msg -> Nat .  --- 0 or 1
+eq dropParamd(msg) =
+     (if canDrop(msg)
+      then (if sampleBerWithP(dropProb(msg)) 
+            then 1   ---- drop
+            else 0 fi) ---- keep
+      else 0 fi) 
+.
+
+**** The drop rate could be made to depend on message type/size ...
+
+**** sample delayParamd -- depending on LinkData, delay is fixed
+**** amount + noise, or sampled with given mean and stdev
+**** This is just to make sure the extensions parse and execute
+**** Alternative can be defined using different link attrs
+**** LinkData could specify the probability distribution to use
+**** Message size could be a factor in the long run
+
+op delayConst : Msg -> Float .
+op delayConstMax : Msg -> Float .
+op delayType : Msg -> String .
+op delayMean : Msg -> Float .
+op delayStd : Msg -> Float .
+
+*** (
+*** ceq delayType(to ADDR from ADDR' : c:Content) = str
+***   if ldata aaa(ADDR,ADDR',(attrs, (delayType: str))) 
+***     := LinkData
+***   .
+*** eq delayType(msg) = "" [owise] .
+*** )
+
+ceq delayType(msg) = str
+  if (attrs, (delayType: str)) := getLinkData(msg)
+  .
+eq delayType(msg) = "Constant" [owise] .
+
+*** (
+*** ceq delayConst(to ADDR from ADDR' : c:Content) = fl
+***   if ldata aaa(ADDR,ADDR',(attrs, (delayConst: fl))) 
+***     := LinkData
+***   .
+*** eq delayConst(msg) = 0.0 [owise] .
+*** )
+
+ceq delayConst(msg) = fl
+  if (attrs, (delayConst: fl)) := getLinkData(msg)
+  .
+eq delayConst(msg) = 0.0 [owise] .
+ 
+*** (
+*** ceq delayMean(to ADDR from ADDR' : c:Content) = fl
+***   if ldata aaa(ADDR,ADDR',(attrs, (delayMean: fl)))
+***     := LinkData
+***   .
+*** eq delayMean(msg) = 0.0 [owise] .
+*** )
+
+ceq delayConstMax(msg) = fl
+  if (attrs, (delayConstMax: fl), (delayConst: fl')) := getLinkData(msg)
+  /\ fl >= fl'
+  .
+eq delayConstMax(msg) = 0.0 [owise] .
+
+ceq delayMean(msg) = fl
+  if (attrs, (delayMean: fl)) := getLinkData(msg)
+  .
+eq delayMean(msg) = 0.0 [owise] .
+
+*** (
+*** ceq delayStd(to ADDR from ADDR' : c:Content) = fl
+***   if ldata aaa(ADDR,ADDR',(attrs, (delayStd: fl))) 
+***     := LinkData
+***   .
+*** eq delayStd(msg) = 0.0 [owise] .
+*** )
+
+ceq delayStd(msg) = fl
+  if (attrs, (delayStd: fl)) := getLinkData(msg)
+  .
+eq delayStd(msg) = 0.0 [owise] .
+
+
+op noiseMin : Msg -> Float .
+op noiseMax : Msg -> Float .
+
+*** (
+*** ceq noiseMin(to ADDR from ADDR' : c:Content) = fl
+***   if ldata aaa(ADDR,ADDR',(attrs, (noiseMin: fl))) 
+***     := LinkData
+***   .
+*** eq noiseMin(msg) = 0.0 [owise] .
+*** )
+
+ceq noiseMin(msg) = fl
+  if (attrs, (noiseMin: fl)) := getLinkData(msg)
+  .
+eq noiseMin(msg) = 0.0 [owise] .
+
+*** (
+*** ceq noiseMax(to ADDR from ADDR' : c:Content) = fl
+***   if ldata aaa(ADDR,ADDR',(attrs, (noiseMax: fl))) 
+***      := LinkData
+***   .
+*** eq noiseMax(msg) = 0.0 [owise] .
+*** )
+
+ceq noiseMax(msg) = fl
+  if (attrs, (noiseMax: fl)) := getLinkData(msg)
+  .
+eq noiseMax(msg) = 0.0 [owise] .
+
+
+*** delayParamd
+op delayParamd : Msg -> Float .
+eq delayParamd(msg) =
+  (if delayType(msg) == "Constant"
+    then delayConst(msg) + genRandom(noiseMin(msg), noiseMax(msg))
+    else (if delayType(msg) == "Uniform"
+      then sampleUniform(delayConst(msg), delayConstMax(msg))
+      else sampleNormalWithMeanSd(delayMean(msg), delayStd(msg))
+      fi)
+  fi)
+  .
+ 
+******** end Generalized delay/drop
+
+
+endm
+eof

@@ -1,4 +1,4 @@
-load ../../dns/probabilistic-model/aux
+load ../../dns/probabilistic-model/_aux
 
 --- some constants
 mod TEST is
