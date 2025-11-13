@@ -74,13 +74,15 @@ mod SCHEDULER is
   eq step(AC {GT | [ t1 , M1, 0 ] ; SL}) 
    = { t1 , M1 } AC {t1 | SL} [owise] .
 
-  --- eagerness
-  ceq run(AC {GT | SL}, LIMIT)
-   = (if (GT <= LIMIT and SL =/= nil) 
-        then run(step(AC {GT | SL}), LIMIT)
-        else AC {GT | SL}
-      fi)
-    if not eagerEnabled(AC) .
+  op stopCondition : Config -> Bool .
+  eq stopCondition(c:Config) = false [owise] .
+
+   ceq run(AC {GT | SL}, LIMIT)
+    = (if LIMIT < GT or SL == nil or stopCondition(AC {GT | SL})
+         then AC {GT | SL}
+         else run(step(AC {GT | SL}), LIMIT)
+       fi)
+     if not eagerEnabled(AC) .
   
   op eagerEnabled : ActorConfig -> Bool .
   eq eagerEnabled(AC) = false [owise] .  
