@@ -46,9 +46,16 @@ class Nameserver:
     def __str__(self) -> str:
         return f'< {self.address} : Nameserver | db: ({self.zones}), ... >'
 
+    def zones_to_maude(self):
+        return f'({" ".join(list(map(lambda z: z.maude_name(), self.zones)))})'
+
     def to_maude(self) -> str:
+        res = f'mkNameServer({address_to_maude(self.address)}, {self.zones_to_maude()}, {address_to_maude(self.forwardonly)})'
+        return res
+
+    def to_maude_full(self) -> str:
         res = f'< {address_to_maude(self.address)} : Nameserver |\n'
-        res += f'    db: ({" ".join(list(map(lambda z: z.maude_name(), self.zones)))}),\n'
+        res += f'    db: {self.zones_to_maude()},\n'
         res += f'    queue: nilQueue,\n'
         res += f'    forwardonly: {address_to_maude(self.forwardonly)},\n'
         res += f'    queriesFwd: nilTAQL >'

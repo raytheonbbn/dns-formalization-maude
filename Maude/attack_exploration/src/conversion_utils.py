@@ -3,7 +3,7 @@ def rtype_to_maude(rtype: str) -> str:
     return rtype.lower()
 
 def address_to_maude(address: str) -> str:
-    octets = address.split('.')
+    octets = address.replace('_', '-').split('.')
     return ' . '.join(octets)
 
 def name_to_maude(name: str) -> str:
