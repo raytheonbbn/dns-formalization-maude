@@ -210,7 +210,7 @@ class Config:
 
     def _to_maude_zones(self) -> str:
         res = '--- Zone files\n'
-        for zone in self._get_zones():
+        for zone in sorted(self._get_zones(), key = lambda x:x.name):
             res += zone.to_maude() + '\n\n'
         return res
 
