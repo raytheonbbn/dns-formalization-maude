@@ -232,7 +232,10 @@ eq noiseMax(msg) = 0.0 [owise] .
 
 *** delayParamd
 op delayParamd : Msg -> Float .
-eq delayParamd(msg) =
+ceq delayParamd(msg) =
+
+  oh:Float +
+
   (if delayType(msg) == "Constant"
     then delayConst(msg) + genRandom(noiseMin(msg), noiseMax(msg))
     else (if delayType(msg) == "Uniform"
@@ -240,7 +243,11 @@ eq delayParamd(msg) =
       else sampleNormalWithMeanSd(delayMean(msg), delayStd(msg))
       fi)
   fi)
+if oh:Float := overhead(msg)
   .
+ 
+ op overhead : Msg -> Float .
+ eq overhead(msg) = 0.0 [owise] .
  
 ******** end Generalized delay/drop
 
