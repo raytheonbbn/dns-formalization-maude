@@ -115,10 +115,19 @@ ceq dropProb(msg) = fl
   .
 eq dropProb(msg) = 0.0 [owise] .
 
+**** added to fake effects of dropping
+op fakeDrop : Msg -> Bool .
+eq fakeDrop(msg) = false [owise] .
 
-*** dropParamd
+*** dropParamdX, dropParamd
 op dropParamd : Msg -> Nat .  --- 0 or 1
-eq dropParamd(msg) =
+op dropParamdX : Msg -> Nat .  --- 0 or 1
+
+eq dropParamd(msg) 
+---- = if fakeDrop(msg) then 0 else dropParamdX(msg) fi .
+   = 0 .
+
+eq dropParamdX(msg) =
      (if canDrop(msg)
       then (if sampleBerWithP(dropProb(msg)) 
             then 1   ---- drop
@@ -232,10 +241,10 @@ eq noiseMax(msg) = 0.0 [owise] .
 
 *** delayParamd
 op delayParamd : Msg -> Float .
-ceq delayParamd(msg) =
+eq delayParamd(msg) =
 
-  oh:Float +
-
+****  oh:Float +
+  overhead(msg) +
   (if delayType(msg) == "Constant"
     then delayConst(msg) + genRandom(noiseMin(msg), noiseMax(msg))
     else (if delayType(msg) == "Uniform"
@@ -243,7 +252,7 @@ ceq delayParamd(msg) =
       else sampleNormalWithMeanSd(delayMean(msg), delayStd(msg))
       fi)
   fi)
-if oh:Float := overhead(msg)
+***** if oh:Float := overhead(msg)
   .
  
  op overhead : Msg -> Float .
