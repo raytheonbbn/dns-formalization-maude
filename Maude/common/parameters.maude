@@ -124,8 +124,8 @@ op dropParamd : Msg -> Nat .  --- 0 or 1
 op dropParamdX : Msg -> Nat .  --- 0 or 1
 
 eq dropParamd(msg) 
----- = if fakeDrop(msg) then 0 else dropParamdX(msg) fi .
-   = 0 .
+ = if fakeDrop(msg) then 0 else dropParamdX(msg) fi .
+----   = 0 .
 
 eq dropParamdX(msg) =
      (if canDrop(msg)
