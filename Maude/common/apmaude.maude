@@ -85,12 +85,15 @@ mod SCHEDULER is
 
   op exeDone : Config -> Bool .
   eq exeDone(conf:Config) = false [owise] .
+
+  op finalize : Config -> Config .
+  eq finalize(conf:Config) = conf:Config [owise] .
    
   ceq run(AC {GT | SL}, LIMIT)
    = (if (GT <= LIMIT and SL =/= nil
          and not(exeDone(AC)) ) 
         then run(step(AC {GT | SL}), LIMIT)
-        else AC {GT | SL}
+        else finalize(AC {GT | SL})
       fi)
     if not eagerEnabled(AC) .
 
