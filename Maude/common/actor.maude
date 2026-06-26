@@ -31,6 +31,8 @@ fmod ACTOR-MODEL is
   subsort Actor < ActorConfig < Config .
   subsort Attribute < AttributeSet .
 
+  op nilAttrs : -> AttributeSet [ctor] .
+
   sort AttributeSetMsgsNat .
   op `{_`,_`,_`} : AttributeSet Config Nat -> AttributeSetMsgsNat [ctor] .
 
@@ -47,6 +49,8 @@ fmod ACTOR-MODEL is
   --- Messages:
   op to_from_:_ : Address Address Content -> Msg .
   op to_:_      : Address Content         -> Msg .
+  op to_from_:_::_  : Address Address Content AttributeSet  -> Msg .
+  op to_:_::_       : Address Content AttributeSet          -> Msg .
 
   --- Actors:
   op <_:_|_> : Address ActorType AttributeSet -> Actor [format (ni d d d d d d d)] .
