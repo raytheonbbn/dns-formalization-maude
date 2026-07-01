@@ -65,6 +65,27 @@ op delayConst:_ : Float ->  Attribute [ctor] .
 op delayConstMax:_ : Float -> Attribute [ctor] .
 op delayMean:_  : Float ->  Attribute [ctor] .
 op delayStd:_   : Float ->  Attribute [ctor] .
+*** 4 State markov chain.
+op 4stateLoss:_   : AttributeSet -> Attribute [ctor] .
+op p13:_          : Float -> Attribute [ctor] .
+op p31:_          : Float -> Attribute [ctor] .
+op p32:_          : Float -> Attribute [ctor] .
+op p23:_          : Float -> Attribute [ctor] .
+op p14:_          : Float -> Attribute [ctor] .
+op oneWayDelay:_  : Float -> Attribute [ctor] .
+
+op get4stateLoss : AttributeSet -> AttributeSet .
+eq get4stateLoss(linkAttrs:AttributeSet, 4stateLoss: attrs:AttributeSet) = attrs:AttributeSet .
+eq get4stateLoss(linkAttrs:AttributeSet) = nilAttrs [owise] .
+
+op getOneWayDelay : AttributeSet -> Float .
+eq getOneWayDelay(linkAttrs:AttributeSet, oneWayDelay: OW:Float)
+  = OW:Float
+.
+*** TODO: There should be an eq for computing the v1 delay.
+eq getOneWayDelay(linkAttrs:AttributeSet) = 0. [owise] .
+
+
 
 ****TODO define setAttrs so LinkData can be based on common attrs
 
@@ -80,7 +101,13 @@ ceq getLinkData(to ADDR from ADDR' : c:Content) = attrs
 ceq getLinkData(to ADDR from ADDR' : c:Content) = attrs
   if ldata aaa(ADDR',ADDR,attrs) := LinkData
   .
-eq getLinkData(msg) = noneAS [owise] .
+ceq getLinkData(to ADDR from ADDR' : c:Content :: a:AttributeSet) = attrs
+  if ldata aaa(ADDR, ADDR', attrs) := LinkData
+.
+ceq getLinkData(to ADDR from ADDR' : c:Content :: a:AttributeSet) = attrs
+  if ldata aaa(ADDR', ADDR, attrs) := LinkData
+.
+eq getLinkData(msg) = noneAS [owise print "No link data for " msg ] .
 
 **** Example dropParamd definition assuming LinkData attributes 
 **** canDrop and dropP in link data

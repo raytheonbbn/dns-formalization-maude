@@ -52,6 +52,24 @@ fmod ACTOR-MODEL is
   op to_from_:_::_  : Address Address Content AttributeSet  -> Msg .
   op to_:_::_       : Address Content AttributeSet          -> Msg .
 
+  op getContent     : Msg                                   -> Content .
+  eq getContent(to DEST:Address from SRC:Address : CONTENT:Content)
+    = CONTENT:Content
+  .
+  eq getContent(to DEST:Address from SRC:Address : CONTENT:Content
+                                                 :: attrs:AttributeSet)
+    = CONTENT:Content
+  .
+
+  op addFlowInfo    : Msg AttributeSet                      -> Msg .
+  eq addFlowInfo((to DEST:Address from SRC:Address : CONTENT:Content),
+                 attrs:AttributeSet)
+    = (to DEST:Address from SRC:Address : CONTENT:Content :: attrs:AttributeSet)
+  .
+  eq addFlowInfo((to DEST:Address : CONTENT:Content), attrs:AttributeSet)
+    = (to DEST:Address : CONTENT:Content :: attrs:AttributeSet)
+  .
+
   --- Actors:
   op <_:_|_> : Address ActorType AttributeSet -> Actor [format (ni d d d d d d d)] .
 
