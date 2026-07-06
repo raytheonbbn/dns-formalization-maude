@@ -76,7 +76,7 @@ op oneWayDelay:_  : Float -> Attribute [ctor] .
 
 op get4stateLoss : AttributeSet -> AttributeSet .
 eq get4stateLoss(linkAttrs:AttributeSet, 4stateLoss: attrs:AttributeSet) = attrs:AttributeSet .
-eq get4stateLoss(linkAttrs:AttributeSet) = nilAttrs [owise] .
+eq get4stateLoss(linkAttrs:AttributeSet) = noneAS [owise] .
 
 op getOneWayDelay : AttributeSet -> Float .
 eq getOneWayDelay(linkAttrs:AttributeSet, oneWayDelay: OW:Float)

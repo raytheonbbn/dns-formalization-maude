@@ -31,8 +31,6 @@ fmod ACTOR-MODEL is
   subsort Actor < ActorConfig < Config .
   subsort Attribute < AttributeSet .
 
-  op nilAttrs : -> AttributeSet [ctor] .
-
   sort AttributeSetMsgsNat .
   op `{_`,_`,_`} : AttributeSet Config Nat -> AttributeSetMsgsNat [ctor] .
 
