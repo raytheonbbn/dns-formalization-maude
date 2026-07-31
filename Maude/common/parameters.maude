@@ -107,7 +107,7 @@ ceq getLinkData(to ADDR from ADDR' : c:Content :: a:AttributeSet) = attrs
 ceq getLinkData(to ADDR from ADDR' : c:Content :: a:AttributeSet) = attrs
   if ldata aaa(ADDR', ADDR, attrs) := LinkData
 .
-eq getLinkData(msg) = noneAS [owise print "No link data for " msg ] .
+eq getLinkData(msg) = noneAS [owise] .
 
 **** Example dropParamd definition assuming LinkData attributes 
 **** canDrop and dropP in link data
