@@ -33,6 +33,8 @@ fmod SORTS is
   sort RData .
   subsorts Name Address < RData .
 
+  op makeName : String -> Name .
+
   op soaData : Float -> RData . --- the MINIMUM field of an SOA record, used for negative caching
 
   sort Record .
