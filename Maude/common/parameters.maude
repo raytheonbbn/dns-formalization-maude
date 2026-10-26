@@ -54,7 +54,9 @@ op __ : AdrAdrAttrsSet AdrAdrAttrsSet -> AdrAdrAttrsSet
 ***   Else: the delay is log-normal distributed logNormal(delayMean, delayStd)
 *** To specify a link drop:
 ***   If canDrop: specify drop probability dropP, which will be compared to roll of dice.
-op LinkData : -> AdrAdrAttrsSet . 
+*** LinkData is a pure, static table within each loaded scenario module.
+*** Reuse its normal form rather than rebuilding it for every parameter lookup.
+op LinkData : -> AdrAdrAttrsSet [memo] .
 op canDrop:_    : Bool -> Attribute [ctor] .
 op dropP:_      : Float -> Attribute [ctor] .
 op noiseMax:_   : Float -> Attribute [ctor] .
